@@ -227,6 +227,7 @@ class ManufacturingOrderListResponse(BaseModel):
     parent_mo_id: Optional[UUID] = None
     parent_mo_ref: Optional[str] = None
     vin_number: Optional[str] = None
+    scheduled_date: Optional[str] = None
     created_at: datetime
 
     class Config:

@@ -378,6 +378,7 @@ def list_manufacturing_orders(
             parent_mo_id=mo.parent_mo_id,
             parent_mo_ref=mo.parent_mo.reference if mo.parent_mo else None,
             vin_number=mo.vin_number,
+            scheduled_date=mo.scheduled_date.isoformat() if mo.scheduled_date else None,
             created_at=mo.created_at,
         )
         for mo in orders

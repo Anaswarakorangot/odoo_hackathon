@@ -111,6 +111,7 @@ export default function ManufacturingOrdersList() {
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Reference</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Product</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Qty</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">VIN</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Status</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Scheduled</th>
                 <th className="px-6 py-4 text-right text-sm font-medium text-slate-400">Actions</th>
@@ -122,6 +123,7 @@ export default function ManufacturingOrdersList() {
                   <td className="px-6 py-4 text-slate-200">{order.reference}</td>
                   <td className="px-6 py-4 text-slate-300">{order.finished_product_name}</td>
                   <td className="px-6 py-4 text-slate-300">{order.quantity}</td>
+                  <td className="px-6 py-4 font-mono text-xs text-cyan-300">{order.vin_number || <span className="text-slate-600">—</span>}</td>
                   <td className="px-6 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${MO_STATUS_COLORS[order.status]}`}>{MO_STATUS_LABELS[order.status]}</span></td>
                   <td className="px-6 py-4 text-slate-400">{formatDate(order.scheduled_date)}</td>
                   <td className="px-6 py-4 text-right">

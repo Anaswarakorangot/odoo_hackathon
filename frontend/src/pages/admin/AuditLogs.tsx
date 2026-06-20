@@ -76,18 +76,6 @@ export default function AuditLogs() {
     return d.toLocaleString();
   };
 
-  // Build a human-readable change description
-  const describeChange = (item: AuditLogItem) => {
-    if (item.action === 'created') return `Created ${item.record_type}`;
-    if (item.action === 'deleted') return `Deleted ${item.record_type}`;
-    if (item.action === 'status_changed') {
-      return `Status: ${item.old_value || '—'} → ${item.new_value || '—'}`;
-    }
-    if (item.action === 'updated' && item.field_changed) {
-      return `${item.field_changed}: ${item.old_value ?? '—'} → ${item.new_value ?? '—'}`;
-    }
-    return `Updated ${item.record_type}`;
-  };
 
   return (
     <div className="space-y-6">
@@ -235,7 +223,7 @@ export default function AuditLogs() {
             <tbody>
               {items.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-12 text-center text-slate-500">
+                  <td colSpan={9} className="px-5 py-12 text-center text-slate-500">
                     No audit entries match these filters
                   </td>
                 </tr>

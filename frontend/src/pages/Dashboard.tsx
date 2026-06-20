@@ -90,7 +90,6 @@ export default function Dashboard() {
   }, []);
 
   const maxHourly = Math.max(...hourlyActivity, 1);
-  const lowStockCount = criticalAssets.filter((product) => Number(product.free_to_use_qty) < 10).length;
   const initials = (user?.name || 'U').split(' ').map((part) => part[0]).slice(0, 2).join('').toUpperCase();
   const delayedTotal = summary
     ? (summary.delayed_orders ?? 0) + (summary.delayed_sales_orders ?? 0) + (summary.delayed_manufacturing_orders ?? 0) + (summary.delayed_purchase_orders ?? 0)

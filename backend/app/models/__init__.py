@@ -8,7 +8,7 @@ from app.models.purchase import PurchaseOrder, PurchaseOrderLine, POStatusEnum
 from app.models.manufacturing import ManufacturingOrder, MoComponent, WorkOrder, MOStatusEnum
 from app.models.stock_ledger import StockLedger, LedgerMovementEnum
 from app.models.audit_log import AuditLog, AuditActionEnum
-from app.models.permissions import RolePermission
+from app.models.permissions import RolePermission, UserPermissionOverride
 
 __all__ = [
     # User
@@ -46,4 +46,5 @@ __all__ = [
     "AuditActionEnum",
     # Permissions
     "RolePermission",
+    "UserPermissionOverride",
 ]

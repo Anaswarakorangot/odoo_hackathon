@@ -116,7 +116,17 @@ export default function PurchaseOrdersList() {
             <tbody>
               {orders.map((order) => (
                 <tr key={order.id} onClick={() => navigate(`/purchase/${order.id}`)} className="cursor-pointer border-b border-slate-800/50 transition-colors hover:bg-slate-800/30">
-                  <td className="px-6 py-4 text-slate-200">{order.reference}</td>
+                  <td className="px-6 py-4 text-slate-200">
+                    <span>{order.reference}</span>
+                    {order.auto_created && (
+                      <span
+                        title="Auto-created from a Sales Order"
+                        className="ml-2 inline-flex items-center rounded-md border border-cyan-500/40 bg-cyan-500/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-[0.15em] text-cyan-300"
+                      >
+                        AUTO
+                      </span>
+                    )}
+                  </td>
                   <td className="px-6 py-4 text-slate-300">{order.vendor_name}</td>
                   <td className="px-6 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${PO_STATUS_COLORS[order.status]}`}>{PO_STATUS_LABELS[order.status]}</span></td>
                   <td className="px-6 py-4 text-right text-slate-300">{formatCurrency(order.total_amount)}</td>
@@ -147,7 +157,14 @@ export default function PurchaseOrdersList() {
                   <button key={order.id} onClick={() => navigate(`/purchase/${order.id}`)} className="w-full rounded-xl border border-slate-800 bg-slate-950 p-4 text-left transition-colors hover:border-cyan-500/30 hover:bg-slate-900">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <div className="font-medium text-white">{order.reference}</div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-white">{order.reference}</span>
+                          {order.auto_created && (
+                            <span className="inline-flex items-center rounded-md border border-cyan-500/40 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.15em] text-cyan-300">
+                              AUTO
+                            </span>
+                          )}
+                        </div>
                         <div className="mt-1 text-sm text-slate-400">{order.vendor_name}</div>
                       </div>
                       <span className="rounded-full px-2.5 py-1 text-xs font-medium text-slate-300">{formatCurrency(order.total_amount)}</span>
