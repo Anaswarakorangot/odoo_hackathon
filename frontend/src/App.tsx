@@ -8,6 +8,8 @@ import ForgetPassword from './pages/auth/ForgetPassword';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import ProductsList from './pages/products/ProductsList';
+import SalesOrdersList from './pages/sales/SalesOrdersList';
+import SalesOrderForm from './pages/sales/SalesOrderForm';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -46,8 +48,10 @@ function App() {
             <Route path="/admin/permissions" element={<PlaceholderPage title="Role Permissions" />} />
             <Route path="/admin/audit" element={<PlaceholderPage title="Audit Logs" />} />
 
-            {/* Business modules (placeholders) */}
-            <Route path="/sales" element={<PlaceholderPage title="Sales Orders" />} />
+            {/* Business modules */}
+            <Route path="/sales" element={<SalesOrdersList />} />
+            <Route path="/sales/new" element={<SalesOrderForm />} />
+            <Route path="/sales/:id" element={<SalesOrderForm />} />
             <Route path="/purchase" element={<PlaceholderPage title="Purchase Orders" />} />
             <Route path="/manufacturing" element={<PlaceholderPage title="Manufacturing Orders" />} />
             <Route path="/products" element={<ProductsList />} />
