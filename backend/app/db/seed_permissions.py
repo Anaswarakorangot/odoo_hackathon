@@ -58,7 +58,6 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view"],
         "BoM": ["view"],
-        "AuditLog": ["view"],
     },
     # Purchase role: view/create/edit on Purchase (NO approve), view on others
     RoleEnum.purchase: {
@@ -67,7 +66,6 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view"],
         "BoM": ["view"],
-        "AuditLog": ["view"],
     },
     # Manufacturing role: view + production_entry on Manufacturing (NO edit_bom), view on others
     RoleEnum.manufacturing: {
@@ -76,7 +74,6 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view", "production_entry"],  # NO edit_bom - Admin only
         "Product": ["view"],
         "BoM": ["view"],
-        "AuditLog": ["view"],
     },
     # Inventory role: view across the board
     RoleEnum.inventory: {
@@ -85,7 +82,6 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view"],
         "BoM": ["view"],
-        "AuditLog": ["view"],
     },
     # Owner role: Business Owner who "manages product"
     # Gets create/edit on Product, view-only on everything else, plus Dashboard
@@ -95,7 +91,6 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view", "create", "edit"],  # Owner manages product catalog
         "BoM": ["view"],
-        "AuditLog": ["view"],
         "Dashboard": ["view"],
     },
 }
