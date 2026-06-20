@@ -147,6 +147,18 @@ export default function PurchaseOrderForm() {
     await doAction(() => purchaseOrdersApi.receive(order.id, { lines: receiveLines }));
   };
 
+  const status = order?.status || 'draft';
+
+  const getFieldLockState = (status: string, fieldName: string) => {
+    if (status === 'fully_received' || status === 'cancelled') return true;
+    if (status !== 'draft' && ['vendor_id', 'lines'].includes(fieldName)) return true;
+    return false;
+  };
+
+  const isReadonly = status === 'fully_received' || status === 'cancelled';
+  const isVendorLocked = getFieldLockState(status, 'vendor_id');
+  const isLinesLocked = getFieldLockState(status, 'lines');
+
   const canReceive = order && ['confirmed', 'partially_received'].includes(order.status);
   const canCancel = order && !['fully_received', 'cancelled'].includes(order.status);
 
@@ -175,7 +187,7 @@ export default function PurchaseOrderForm() {
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-4">
         <div>
           <label className="mb-2 block text-sm font-medium text-slate-400">Vendor *</label>
-          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} disabled={!isNew && !!order} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50">
+          <select value={vendorId} onChange={(e) => setVendorId(e.target.value)} disabled={isVendorLocked} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50">
             <option value="">Select vendor...</option>
             {vendors.map((vendor) => <option key={vendor.id} value={vendor.id}>{vendor.name}</option>)}
           </select>
@@ -185,7 +197,7 @@ export default function PurchaseOrderForm() {
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-white">Order Lines</h2>
-          {(isNew || order?.status === 'draft') && <button onClick={addLine} className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700">+ Add Line</button>}
+          {!isLinesLocked && !isReadonly && <button onClick={addLine} className="rounded-lg bg-slate-800 px-3 py-1.5 text-sm text-slate-300 transition-colors hover:bg-slate-700">+ Add Line</button>}
         </div>
 
         <table className="w-full text-sm">
@@ -196,26 +208,26 @@ export default function PurchaseOrderForm() {
               <th className="pb-2 text-right">Received Qty</th>
               <th className="pb-2 text-right">Unit Cost</th>
               <th className="pb-2 text-right">Total</th>
-              {(isNew || order?.status === 'draft') && <th className="pb-2" />}
+              {!isLinesLocked && !isReadonly && <th className="pb-2" />}
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-800/50">
             {lines.map((line, index) => (
               <tr key={index}>
                 <td className="py-3">
-                  {(isNew || order?.status === 'draft') ? (
+                  {!isLinesLocked && !isReadonly ? (
                     <select value={line.product_id} onChange={(e) => updateLine(index, 'product_id', e.target.value)} className="w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-slate-200">
                       {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
                     </select>
                   ) : <span className="text-slate-200">{line.product_name}</span>}
                 </td>
                 <td className="py-3 text-right">
-                  {(isNew || order?.status === 'draft') ? <input type="number" min={1} value={line.ordered_qty} onChange={(e) => updateLine(index, 'ordered_qty', e.target.value)} className="w-24 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-right text-slate-200" /> : <span className="text-slate-200">{line.ordered_qty}</span>}
+                  {!isLinesLocked && !isReadonly ? <input type="number" min={1} value={line.ordered_qty} onChange={(e) => updateLine(index, 'ordered_qty', e.target.value)} className="w-24 rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 text-xs text-right text-slate-200" /> : <span className="text-slate-200">{line.ordered_qty}</span>}
                 </td>
                 <td className="py-3 text-right text-slate-400">{line.received_qty}</td>
                 <td className="py-3 text-right text-slate-300">${line.cost_price.toFixed(2)}</td>
                 <td className="py-3 text-right font-medium text-white">${line.line_total.toFixed(2)}</td>
-                {(isNew || order?.status === 'draft') && <td className="py-3 pl-3"><button onClick={() => setLines((current) => current.filter((_, idx) => idx !== index))} className="text-xs text-red-400 hover:text-red-300">✕</button></td>}
+                {!isLinesLocked && !isReadonly && <td className="py-3 pl-3"><button onClick={() => setLines((current) => current.filter((_, idx) => idx !== index))} className="text-xs text-red-400 hover:text-red-300">✕</button></td>}
               </tr>
             ))}
             {lines.length === 0 && <tr><td colSpan={6} className="py-6 text-center text-slate-500">No lines added</td></tr>}
@@ -236,6 +248,7 @@ export default function PurchaseOrderForm() {
         {isSystemAdmin && order?.status === 'draft' && !isNew && <button onClick={() => doAction(() => purchaseOrdersApi.confirm(order.id))} className="rounded-xl bg-blue-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-blue-500">Confirm</button>}
         {canReceive && <button onClick={() => setShowReceiveModal(true)} className="rounded-xl bg-emerald-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-emerald-500">Receive</button>}
         {canCancel && !isNew && <button onClick={() => doAction(() => purchaseOrdersApi.cancel(order!.id))} className="rounded-xl bg-slate-700 px-5 py-2.5 font-medium text-white transition-colors hover:bg-slate-600">Cancel Order</button>}
+        {order && <button onClick={() => navigate(`/admin/audit?module=Purchase&record_id=${order.id}`)} className="rounded-xl bg-slate-800 border border-slate-700 px-5 py-2.5 font-medium text-white transition-colors hover:bg-slate-700">Logs</button>}
       </div>
 
       {showReceiveModal && order && <ReceiveModal lines={lines.filter((line) => line.received_qty < line.ordered_qty)} onClose={() => setShowReceiveModal(false)} onSubmit={handleReceive} />}
