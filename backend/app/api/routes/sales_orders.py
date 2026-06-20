@@ -45,8 +45,17 @@ router = APIRouter(prefix="/sales-orders", tags=["sales-orders"])
 
 def get_next_so_reference(db: Session) -> str:
     """Generate next SO reference like SO-000001, SO-000002, etc."""
-    count = db.query(func.count(SalesOrder.id)).scalar() or 0
-    next_num = count + 1
+    from sqlalchemy import Integer
+    max_num = db.query(
+        func.max(
+            func.cast(
+                func.substr(SalesOrder.reference, 4),
+                Integer
+            )
+        )
+    ).filter(SalesOrder.reference.like("SO-%")).scalar()
+
+    next_num = (max_num or 0) + 1
     return f"SO-{next_num:06d}"
 
 
