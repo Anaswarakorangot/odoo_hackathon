@@ -177,3 +177,39 @@ curl -X POST http://localhost:8000/api/manufacturing-orders/<mo_id>/confirm \
 | `POST` | `/api/manufacturing-orders/{id}/produce` | `in_progress → done` (stock moves here) |
 | `POST` | `/api/manufacturing-orders/{id}/cancel` | Any non-terminal → `cancelled` |
 | `DELETE` | `/api/manufacturing-orders/{id}` | Draft only, Admin only |
+
+---
+
+## Slice 6 — Round 3 Backend B: Dashboard + User Management
+
+### Method 1: Automated Script
+
+```powershell
+cd c:\Users\Admin\Desktop\odoo_hackathon\backend
+.\venv\Scripts\python "C:/Users/Admin/.gemini/antigravity-ide/brain/1c61adc9-0c33-4208-b658-97f53c986f03/scratch/verify_slice_dashboard.py"
+```
+
+Expected output: `All checks passed! Dashboard + User Management verified successfully.`
+
+---
+
+### Method 2: Manual via Swagger UI
+
+#### Dashboard Endpoint
+1. Open `http://localhost:8000/docs`
+2. Authenticate as an **Owner** user (e.g. signup with role `owner` and authorize).
+3. Find the `/api/dashboard/summary` endpoint.
+4. Execute `GET /api/dashboard/summary`.
+5. Verify it returns aggregate counts including:
+   - `total_sales_orders`
+   - `pending_deliveries` (confirmed or partially_delivered SOs)
+   - `total_manufacturing_orders`
+   - `delayed_orders` (MOs scheduled in the past that are not done or cancelled)
+   - `total_purchase_orders`
+   - `partial_receipts` (partially_received POs)
+
+#### User Management Endpoints
+1. Authenticate as a **System Admin** user (a user with `is_system_admin=true` in the database).
+2. Call `GET /api/users/` to fetch the list of all registered users.
+3. Call `PATCH /api/users/{user_id}` to update a user's role or system admin status (e.g. payload: `{"role": "purchase"}`).
+4. Verify standard role users get `403 Forbidden` if they try to call admin-only endpoints.
