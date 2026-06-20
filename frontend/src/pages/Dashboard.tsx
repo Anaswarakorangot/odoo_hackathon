@@ -103,11 +103,13 @@ export default function Dashboard() {
         <p className="mt-1 text-sm tracking-wide text-slate-500">System operational. All nodes reporting normal performance.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Open Sales" value={summary?.pending_deliveries ?? '—'} hint={`${summary?.total_sales_orders ?? 0} total this period`} accent="cyan" icon={<span>◆</span>} />
-        <StatCard label="Pending POs" value={summary?.partial_receipts ?? '—'} hint={`${summary?.total_purchase_orders ?? 0} total POs`} accent="amber" icon={<span>◆</span>} />
-        <StatCard label="Active MOs" value={summary?.total_manufacturing_orders ?? '—'} hint={`${delayedTotal} delayed`} accent="emerald" icon={<span>◆</span>} />
-        <StatCard label="Low Stock" value={String(lowStockCount).padStart(2, '0')} hint="Reorder threshold" accent="rose" icon={<span>◆</span>} />
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <StatCard label="Total Sales Orders" value={summary?.total_sales_orders ?? '—'} hint="All time sales" accent="cyan" icon={<span>◆</span>} />
+        <StatCard label="Pending Deliveries" value={summary?.pending_deliveries ?? '—'} hint="Orders awaiting fulfillment" accent="cyan" icon={<span>◆</span>} />
+        <StatCard label="Total Purchase Orders" value={summary?.total_purchase_orders ?? '—'} hint="All time purchases" accent="amber" icon={<span>◆</span>} />
+        <StatCard label="Partial Receipts" value={summary?.partial_receipts ?? '—'} hint="Incomplete shipments" accent="amber" icon={<span>◆</span>} />
+        <StatCard label="Manufacturing Orders" value={summary?.total_manufacturing_orders ?? '—'} hint="Total production orders" accent="emerald" icon={<span>◆</span>} />
+        <StatCard label="Delayed Orders" value={summary?.delayed_orders ?? '—'} hint="Past scheduled date" accent="rose" icon={<span>◆</span>} />
       </div>
 
       <div className="rounded-2xl border border-slate-800 bg-slate-900/70 p-6">
