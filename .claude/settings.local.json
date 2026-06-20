@@ -5,7 +5,8 @@
       "Bash(echo \"EXIT=$?\")",
       "Bash(python -c ' *)",
       "Bash(grep -E \"\\\\.\\(ts|tsx|json\\)$\")",
-      "Bash(echo \"FE_EXIT=$?\")"
+      "Bash(echo \"FE_EXIT=$?\")",
+      "Bash(git pull origin main)"
     ]
   }
 }
