@@ -6,6 +6,7 @@ State machine:
    │                     │                          │
    └─────────cancel──────┴──────────cancel──────────┘
 """
+from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -90,6 +91,9 @@ def build_so_response(so: SalesOrder) -> SalesOrderResponse:
         if so.salesperson
         else None,
         status=so.status.value,
+        expected_delivery_date=so.expected_delivery_date.isoformat()
+        if so.expected_delivery_date
+        else None,
         lines=lines,
         total_amount=total_amount,
         created_at=so.created_at,
@@ -153,12 +157,24 @@ def create_sales_order(
     # Generate reference
     reference = get_next_so_reference(db)
 
+    # Parse expected_delivery_date if provided
+    expected_date = None
+    if request.expected_delivery_date:
+        try:
+            expected_date = date.fromisoformat(request.expected_delivery_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid expected_delivery_date format, use YYYY-MM-DD"
+            )
+
     # Create sales order with customer address snapshot
     so = SalesOrder(
         reference=reference,
         customer_id=request.customer_id,
         customer_address=customer.address,  # Snapshot at order-create time
         salesperson_id=salesperson_id,
+        expected_delivery_date=expected_date,
         status=SOStatusEnum.draft,
         created_by=current_user.id,
     )
@@ -256,6 +272,9 @@ def list_sales_orders(
                 reference=so.reference,
                 customer_name=so.customer.name,
                 status=so.status.value,
+                expected_delivery_date=so.expected_delivery_date.isoformat()
+                if so.expected_delivery_date
+                else None,
                 total_amount=total_amount,
                 created_at=so.created_at,
             )
@@ -441,6 +460,33 @@ def update_sales_order(
                     old_value=str(old_value) if old_value else None,
                     new_value=str(new_value) if new_value else None,
                 )
+
+    # Handle expected_delivery_date
+    if "expected_delivery_date" in update_data:
+        old_date = so.expected_delivery_date
+        new_date_str = update_data["expected_delivery_date"]
+        new_date = None
+        if new_date_str:
+            try:
+                new_date = date.fromisoformat(new_date_str)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid expected_delivery_date format, use YYYY-MM-DD"
+                )
+        if old_date != new_date:
+            so.expected_delivery_date = new_date
+            audit_service.log_change(
+                db,
+                user_id=current_user.id,
+                module="Sales",
+                record_type="SalesOrder",
+                record_id=so.id,
+                action="updated",
+                field_changed="expected_delivery_date",
+                old_value=old_date.isoformat() if old_date else None,
+                new_value=new_date.isoformat() if new_date else None,
+            )
 
     # Handle lines update (only in draft status for full edit)
     if "lines" in update_data and update_data["lines"] is not None:

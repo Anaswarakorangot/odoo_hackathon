@@ -147,13 +147,20 @@ def update_user(
 ):
     """
     Update a user's profile. Only accessible by system administrators.
-    System admins can set role, position, and is_system_admin.
+    System admins can set role and position, but NOT is_system_admin.
+
+    Note: is_system_admin is deliberately excluded - promoting/demoting admins
+    should be a separate, auditable action, not bundled into a generic update.
     """
     user = db.query(UserModel).filter(UserModel.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
 
     update_data = user_update.model_dump(exclude_unset=True)
+
+    # SECURITY: Strip is_system_admin - this field cannot be changed via generic update
+    # Same pattern as signup hardcoding is_system_admin=False
+    update_data.pop("is_system_admin", None)
 
     # Check email uniqueness if being updated
     if "email" in update_data and update_data["email"] != user.email:
@@ -165,8 +172,7 @@ def update_user(
 
     # Validate role/admin constraint after update
     new_role = update_data.get("role", user.role)
-    new_is_admin = update_data.get("is_system_admin", user.is_system_admin)
-    if not new_is_admin and new_role is None:
+    if not user.is_system_admin and new_role is None:
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
             detail=[{"field": "role", "message": "Role is required for non-admin users"}]

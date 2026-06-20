@@ -180,6 +180,15 @@ class SalesOrderBrief(BaseModel):
         from_attributes = True
 
 
+class MoBrief(BaseModel):
+    """Brief reference to a related Manufacturing Order (parent or child)."""
+    id: UUID
+    reference: str
+
+    class Config:
+        from_attributes = True
+
+
 class ManufacturingOrderResponse(BaseModel):
     id: UUID
     reference: str
@@ -190,8 +199,13 @@ class ManufacturingOrderResponse(BaseModel):
     auto_created: bool
     source_sales_order_id: Optional[UUID]
     source_sales_order_ref: Optional[str]
+    # Parent/child MO hierarchy for recursive cascade
+    parent_mo_id: Optional[UUID] = None
+    parent_mo_ref: Optional[str] = None
+    child_mos: List[MoBrief] = []
     assignee: Optional[UserBrief]
     scheduled_date: Optional[str]
+    vin_number: Optional[str] = None
     components: List[MoComponentResponse]
     work_orders: List[WorkOrderResponse]
     created_at: datetime
@@ -210,6 +224,9 @@ class ManufacturingOrderListResponse(BaseModel):
     status: str
     auto_created: bool
     source_sales_order_id: Optional[UUID]
+    parent_mo_id: Optional[UUID] = None
+    parent_mo_ref: Optional[str] = None
+    vin_number: Optional[str] = None
     created_at: datetime
 
     class Config:

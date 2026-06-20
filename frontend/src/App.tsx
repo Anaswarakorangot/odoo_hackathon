@@ -15,6 +15,7 @@ import PurchaseOrderForm from './pages/purchase/PurchaseOrderForm';
 import ManufacturingOrdersList from './pages/manufacturing/ManufacturingOrdersList';
 import ManufacturingOrderForm from './pages/manufacturing/ManufacturingOrderForm';
 import UserManagement from './pages/admin/UserManagement';
+import RecallLookup from './pages/recall/RecallLookup';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -66,6 +67,7 @@ function App() {
             <Route path="/products" element={<ProductsList />} />
             <Route path="/bom" element={<PlaceholderPage title="Bill of Materials" />} />
             <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
+            <Route path="/recall" element={<RecallLookup />} />
 
             {/* Profile and settings */}
             <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />

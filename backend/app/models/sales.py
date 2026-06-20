@@ -4,7 +4,7 @@ from datetime import datetime
 from decimal import Decimal
 
 from sqlalchemy import (
-    Column, String, Numeric, DateTime, Enum, ForeignKey, CheckConstraint
+    Column, String, Numeric, Date, DateTime, Enum, ForeignKey, CheckConstraint
 )
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
@@ -41,6 +41,7 @@ class SalesOrder(Base):
         nullable=False,
         default=SOStatusEnum.draft
     )
+    expected_delivery_date = Column(Date, nullable=True)
     created_at = Column(DateTime(timezone=True), nullable=False, default=datetime.utcnow)
     created_by = Column(
         UUID(as_uuid=True),

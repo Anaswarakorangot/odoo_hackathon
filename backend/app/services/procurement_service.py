@@ -1,13 +1,15 @@
 """
 Procurement Service - Auto-creates Purchase Orders or Manufacturing Orders
-when a Sales Order confirms with a shortage.
+when a Sales Order confirms with a shortage, or when a Manufacturing Order
+confirms with component shortages (recursive MO cascade).
 
-Called from POST /sales-orders/{id}/confirm, once per line, inside the same
-DB transaction as the SO confirm itself.
+Called from:
+- POST /sales-orders/{id}/confirm - once per line, for SO shortage handling
+- POST /manufacturing-orders/{id}/confirm - for MO component shortage cascade
 """
 import logging
 from decimal import Decimal
-from typing import Union
+from typing import List, Optional, Set, Union
 from uuid import UUID
 
 from sqlalchemy import func
@@ -259,3 +261,168 @@ def _create_manufacturing_order(
     )
 
     return mo
+
+
+def check_mo_component_shortages(
+    db: Session,
+    mo: ManufacturingOrder,
+    current_user: User,
+    ancestry_product_ids: Optional[Set[UUID]] = None,
+) -> List[ManufacturingOrder]:
+    """
+    Check if any MO component has a shortage requiring recursive MO creation.
+
+    Called during MO confirm. For each component:
+    1. Check if to_consume > product.on_hand_qty (shortage exists)
+    2. If product has procure_on_demand=True and procurement_type=manufacturing,
+       create a child MO with parent_mo_id set to the current MO
+
+    Cycle detection: tracks product IDs through ancestry. If a product appears
+    twice in the chain (A → B → A), stops to prevent infinite recursion.
+
+    Returns list of all child MOs created (direct + transitive).
+    """
+    if ancestry_product_ids is None:
+        ancestry_product_ids = set()
+
+    # Add current MO's finished product to ancestry chain
+    ancestry_product_ids = ancestry_product_ids | {mo.finished_product_id}
+
+    created_mos: List[ManufacturingOrder] = []
+
+    # Load components with their products
+    components = (
+        db.query(MoComponent)
+        .filter(MoComponent.mo_id == mo.id)
+        .all()
+    )
+
+    for comp in components:
+        # Lock product row for concurrency
+        product = (
+            db.query(Product)
+            .filter(Product.id == comp.component_product_id)
+            .with_for_update()
+            .first()
+        )
+
+        if not product:
+            logger.warning(f"Component product {comp.component_product_id} not found for MO {mo.id}")
+            continue
+
+        # Skip if not procure_on_demand or not manufacturing type
+        if not product.procure_on_demand:
+            continue
+        if product.procurement_type != ProcurementTypeEnum.manufacturing:
+            continue
+
+        # Cycle detection: if this product is already in ancestry, skip
+        if product.id in ancestry_product_ids:
+            logger.warning(
+                f"Cycle detected: product '{product.name}' ({product.id}) already in ancestry chain. "
+                f"Skipping child MO to prevent infinite recursion."
+            )
+            continue
+
+        # Calculate shortage
+        shortage = comp.to_consume - product.on_hand_qty
+        if shortage <= 0:
+            continue
+
+        # Create child MO
+        child_mo = _create_child_manufacturing_order(
+            db=db,
+            product=product,
+            shortage=shortage,
+            parent_mo=mo,
+            current_user=current_user,
+        )
+        created_mos.append(child_mo)
+
+        # Recursively check the child MO's components
+        grandchildren = check_mo_component_shortages(
+            db=db,
+            mo=child_mo,
+            current_user=current_user,
+            ancestry_product_ids=ancestry_product_ids,
+        )
+        created_mos.extend(grandchildren)
+
+    return created_mos
+
+
+def _create_child_manufacturing_order(
+    db: Session,
+    product: Product,
+    shortage: Decimal,
+    parent_mo: ManufacturingOrder,
+    current_user: User,
+) -> ManufacturingOrder:
+    """
+    Create a child Manufacturing Order for a component shortage.
+
+    Similar to _create_manufacturing_order but sets parent_mo_id instead of
+    source_sales_order_id, and inherits source_sales_order_id from parent.
+    """
+    reference = _get_next_mo_reference(db)
+
+    child_mo = ManufacturingOrder(
+        reference=reference,
+        finished_product_id=product.id,
+        bom_id=product.default_bom_id,
+        quantity=shortage,
+        assignee_id=current_user.id,
+        status=MOStatusEnum.draft,
+        auto_created=True,
+        source_sales_order_id=parent_mo.source_sales_order_id,  # Inherit from parent
+        parent_mo_id=parent_mo.id,
+        created_by=current_user.id,
+    )
+    db.add(child_mo)
+    db.flush()  # Get MO id
+
+    # Populate components from BoM if present
+    if child_mo.bom_id:
+        bom_lines = db.query(BomLine).filter(BomLine.bom_id == child_mo.bom_id).all()
+        for bom_line in bom_lines:
+            mo_component = MoComponent(
+                mo_id=child_mo.id,
+                component_product_id=bom_line.component_product_id,
+                to_consume=bom_line.qty_per_unit * shortage,
+                consumed_qty=Decimal("0"),
+            )
+            db.add(mo_component)
+
+        # Populate work_orders from BoM operations
+        bom_operations = (
+            db.query(BomOperation)
+            .filter(BomOperation.bom_id == child_mo.bom_id)
+            .order_by(BomOperation.sequence)
+            .all()
+        )
+        for bom_op in bom_operations:
+            wo = WorkOrder(
+                mo_id=child_mo.id,
+                sequence=bom_op.sequence,
+                operation_name=bom_op.operation_name,
+                work_center=bom_op.work_center,
+                expected_duration_min=int(bom_op.expected_duration_min * float(shortage)),
+            )
+            db.add(wo)
+
+    # Audit log
+    audit_service.log_change(
+        db,
+        user_id=current_user.id,
+        module="Manufacturing",
+        record_type="ManufacturingOrder",
+        record_id=child_mo.id,
+        action="created",
+    )
+
+    logger.info(
+        f"Auto-created child MO {reference} for component '{product.name}' "
+        f"qty={shortage} from parent MO {parent_mo.reference}"
+    )
+
+    return child_mo

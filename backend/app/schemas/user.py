@@ -30,10 +30,16 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(BaseModel):
+    """
+    Fields that can be updated on a user.
+
+    Note: is_system_admin is deliberately NOT included here.
+    Admin promotion/demotion is a sensitive action that should not be
+    bundled into a generic update - same principle as SignupRequest.
+    """
     name: Optional[str] = None
     email: Optional[EmailStr] = None
     role: Optional[RoleEnum] = None
-    is_system_admin: Optional[bool] = None
     address: Optional[str] = None
     mobile_number: Optional[str] = None
     position: Optional[str] = None
