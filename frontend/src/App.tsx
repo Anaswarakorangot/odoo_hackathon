@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { ToastProvider } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
@@ -37,53 +38,55 @@ function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <Routes>
-          {/* Root goes to auth entry to avoid the old marketing landing surface */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
+        <ToastProvider>
+          <Routes>
+            {/* Root goes to auth entry to avoid the old marketing landing surface */}
+            <Route path="/" element={<Navigate to="/login" replace />} />
 
-          {/* Public auth routes */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/login/admin" element={<Login isAdminLogin />} />
-          <Route path="/signup" element={<Signup />} />
-          <Route path="/forget-password" element={<ForgetPassword />} />
+            {/* Public auth routes */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/login/admin" element={<Login isAdminLogin />} />
+            <Route path="/signup" element={<Signup />} />
+            <Route path="/forget-password" element={<ForgetPassword />} />
 
-          {/* Protected routes with app shell */}
-          <Route element={<AppShell />}>
-            {/* User dashboard */}
-            <Route path="/dashboard" element={<Dashboard />} />
+            {/* Protected routes with app shell */}
+            <Route element={<AppShell />}>
+              {/* User dashboard */}
+              <Route path="/dashboard" element={<Dashboard />} />
 
-            {/* Admin dashboard */}
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<UserManagement />} />
-            <Route path="/admin/permissions" element={<PlaceholderPage title="Role Permissions" />} />
-            <Route path="/admin/audit" element={<AuditLogs />} />
+              {/* Admin dashboard */}
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/users" element={<UserManagement />} />
+              <Route path="/admin/permissions" element={<PlaceholderPage title="Role Permissions" />} />
+              <Route path="/admin/audit" element={<AuditLogs />} />
 
-            {/* Business modules */}
-            <Route path="/sales" element={<SalesOrdersList />} />
-            <Route path="/sales/new" element={<SalesOrderForm />} />
-            <Route path="/sales/:id" element={<SalesOrderForm />} />
-            <Route path="/purchase" element={<PurchaseOrdersList />} />
-            <Route path="/purchase/new" element={<PurchaseOrderForm />} />
-            <Route path="/purchase/:id" element={<PurchaseOrderForm />} />
-            <Route path="/manufacturing" element={<ManufacturingOrdersList />} />
-            <Route path="/manufacturing/new" element={<ManufacturingOrderForm />} />
-            <Route path="/manufacturing/:id" element={<ManufacturingOrderForm />} />
-            <Route path="/products" element={<ProductsList />} />
-            <Route path="/bom" element={<BomList />} />
-            <Route path="/bom/new" element={<BomForm />} />
-            <Route path="/bom/:id" element={<BomForm />} />
-            <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
-            <Route path="/recall" element={<RecallLookup />} />
-            <Route path="/ai-insights" element={<AiInsights />} />
+              {/* Business modules */}
+              <Route path="/sales" element={<SalesOrdersList />} />
+              <Route path="/sales/new" element={<SalesOrderForm />} />
+              <Route path="/sales/:id" element={<SalesOrderForm />} />
+              <Route path="/purchase" element={<PurchaseOrdersList />} />
+              <Route path="/purchase/new" element={<PurchaseOrderForm />} />
+              <Route path="/purchase/:id" element={<PurchaseOrderForm />} />
+              <Route path="/manufacturing" element={<ManufacturingOrdersList />} />
+              <Route path="/manufacturing/new" element={<ManufacturingOrderForm />} />
+              <Route path="/manufacturing/:id" element={<ManufacturingOrderForm />} />
+              <Route path="/products" element={<ProductsList />} />
+              <Route path="/bom" element={<BomList />} />
+              <Route path="/bom/new" element={<BomForm />} />
+              <Route path="/bom/:id" element={<BomForm />} />
+              <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
+              <Route path="/recall" element={<RecallLookup />} />
+              <Route path="/ai-insights" element={<AiInsights />} />
 
-            {/* Profile and settings */}
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
-          </Route>
+              {/* Profile and settings */}
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+            </Route>
 
-          {/* Catch all */}
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+            {/* Catch all */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </ToastProvider>
       </AuthProvider>
     </BrowserRouter>
   );
