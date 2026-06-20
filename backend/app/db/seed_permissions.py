@@ -51,46 +51,46 @@ from app.models.permissions import RolePermission
 # | Product       | edit             | True  | True  |
 
 DEFAULT_PERMISSIONS = {
-    # Sales role: view/create/edit on Sales (NO delete, NO approve), view on others
+    # Sales role: view/create/edit on Sales; create/edit on Product (add finished vehicles)
     RoleEnum.sales: {
-        "Sales": ["view", "create", "edit"],  # NO delete, NO approve - Admin only
+        "Sales": ["view", "create", "edit"],
         "Purchase": ["view"],
         "Manufacturing": ["view"],
-        "Product": ["view"],
+        "Product": ["view", "create", "edit"],
         "BoM": ["view"],
     },
-    # Purchase role: view/create/edit on Purchase (NO approve), view on others
+    # Purchase role: view/create/edit on Purchase; create/edit on Product (add raw components)
     RoleEnum.purchase: {
         "Sales": ["view"],
-        "Purchase": ["view", "create", "edit"],  # NO approve - Admin only
+        "Purchase": ["view", "create", "edit"],
         "Manufacturing": ["view"],
-        "Product": ["view"],
+        "Product": ["view", "create", "edit"],
         "BoM": ["view"],
     },
-    # Manufacturing role: view + production_entry on Manufacturing (NO edit_bom), view on others
+    # Manufacturing role: production_entry on Manufacturing; create/edit on Product (add sub-assemblies)
     RoleEnum.manufacturing: {
         "Sales": ["view"],
         "Purchase": ["view"],
-        "Manufacturing": ["view", "production_entry"],  # NO edit_bom - Admin only
-        "Product": ["view"],
+        "Manufacturing": ["view", "production_entry", "create", "edit"],
+        "Product": ["view", "create", "edit"],
         "BoM": ["view"],
     },
-    # Inventory role: view across the board
+    # Inventory role: view all; create/edit on Product (manage stock items)
     RoleEnum.inventory: {
         "Sales": ["view"],
         "Purchase": ["view"],
         "Manufacturing": ["view"],
-        "Product": ["view"],
+        "Product": ["view", "create", "edit"],
         "BoM": ["view"],
     },
-    # Owner role: Business Owner who "manages product"
-    # Gets create/edit on Product, view-only on everything else, plus Dashboard
+    # Owner role: Business Owner / General Manager
+    # Full create/edit access across all modules — they oversee all operations
     RoleEnum.owner: {
-        "Sales": ["view"],
-        "Purchase": ["view"],
-        "Manufacturing": ["view"],
-        "Product": ["view", "create", "edit"],  # Owner manages product catalog
-        "BoM": ["view"],
+        "Sales": ["view", "create", "edit"],
+        "Purchase": ["view", "create", "edit"],
+        "Manufacturing": ["view", "create", "edit", "production_entry"],
+        "Product": ["view", "create", "edit"],
+        "BoM": ["view", "create", "edit"],
         "Dashboard": ["view"],
     },
 }
