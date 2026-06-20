@@ -37,6 +37,7 @@ def list_audit_logs(
     record_id: Optional[UUID] = Query(None, description="Filter by specific record UUID (deep-link case)"),
     date_from: Optional[date] = Query(None, description="Inclusive start date (ISO format)"),
     date_to: Optional[date] = Query(None, description="Inclusive end date (ISO format)"),
+    since: Optional[datetime] = Query(None, description="Only return logs strictly after this datetime (for polling)"),
     page: int = Query(1, ge=1, description="Page number (1-indexed)"),
     page_size: int = Query(50, ge=1, le=200, description="Items per page (max 200)"),
 ):
@@ -71,6 +72,9 @@ def list_audit_logs(
     if date_to is not None:
         # Inclusive: end of the given day
         query = query.filter(AuditLog.occurred_at <= datetime.combine(date_to, time.max))
+
+    if since is not None:
+        query = query.filter(AuditLog.occurred_at > since)
 
     # --- Total count (before pagination) ---
     total_count = query.count()

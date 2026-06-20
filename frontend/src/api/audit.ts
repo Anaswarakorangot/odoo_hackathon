@@ -8,6 +8,7 @@ export const auditLogsApi = {
     if (filters.action) params.append('action', filters.action);
     if (filters.date_from) params.append('date_from', filters.date_from);
     if (filters.date_to) params.append('date_to', filters.date_to);
+    if (filters.since) params.append('since', filters.since);
     if (filters.page) params.append('page', String(filters.page));
     if (filters.page_size) params.append('page_size', String(filters.page_size));
 

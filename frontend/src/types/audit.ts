@@ -23,6 +23,7 @@ export interface AuditLogFilters {
   user_name?: string;
   date_from?: string;
   date_to?: string;
+  since?: string;
   page?: number;
   page_size?: number;
 }

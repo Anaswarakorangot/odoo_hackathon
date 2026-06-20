@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { salesOrdersApi, customersApi, productsApi } from '../../api/sales';
 import type { SalesOrder, Customer, ProductBrief, SalesOrderLineCreate } from '../../types/sales';
 import { STATUS_COLORS, STATUS_LABELS } from '../../types/sales';
@@ -25,6 +26,7 @@ export default function SalesOrderForm() {
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const { user } = useAuth();
 
   // Form state
   const [customerId, setCustomerId] = useState('');
@@ -293,13 +295,15 @@ export default function SalesOrderForm() {
               </button>
               {!isNew && (
                 <>
-                  <button
-                    onClick={handleConfirm}
-                    disabled={saving}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-400 disabled:opacity-50"
-                  >
-                    Confirm
-                  </button>
+                  {user?.is_system_admin && (
+                    <button
+                      onClick={handleConfirm}
+                      disabled={saving}
+                      className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-400 disabled:opacity-50"
+                    >
+                      Confirm
+                    </button>
+                  )}
                   <button
                     onClick={handleCancel}
                     disabled={saving}
@@ -307,13 +311,15 @@ export default function SalesOrderForm() {
                   >
                     Cancel Order
                   </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={saving}
-                    className="px-4 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-400 disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
+                  {user?.is_system_admin && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={saving}
+                      className="px-4 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-400 disabled:opacity-50"
+                    >
+                      Delete
+                    </button>
+                  )}
                 </>
               )}
             </>

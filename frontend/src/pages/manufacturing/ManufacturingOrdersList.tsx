@@ -16,7 +16,16 @@ export default function ManufacturingOrdersList() {
   const [statusFilter, setStatusFilter] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('table');
 
-  useEffect(() => { loadOrders(); }, [search, statusFilter]);
+  useEffect(() => {
+    loadOrders();
+    
+    const handleSystemEvent = () => loadOrders();
+    window.addEventListener('systemDataChanged', handleSystemEvent);
+    
+    return () => {
+      window.removeEventListener('systemDataChanged', handleSystemEvent);
+    };
+  }, [search, statusFilter]);
 
   const loadOrders = async () => {
     try {

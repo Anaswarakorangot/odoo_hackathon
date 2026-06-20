@@ -17,6 +17,14 @@ export default function SalesOrdersList() {
 
   useEffect(() => {
     loadOrders();
+    
+    // Auto-refresh when system events occur
+    const handleSystemEvent = () => loadOrders();
+    window.addEventListener('systemDataChanged', handleSystemEvent);
+    
+    return () => {
+      window.removeEventListener('systemDataChanged', handleSystemEvent);
+    };
   }, [search, statusFilter]);
 
   const loadOrders = async () => {
