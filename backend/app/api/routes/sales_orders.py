@@ -45,16 +45,6 @@ router = APIRouter(prefix="/sales-orders", tags=["sales-orders"])
 
 def get_next_so_reference(db: Session) -> str:
     """Generate next SO reference like SO-000001, SO-000002, etc."""
-    result = db.query(
-        func.max(
-            func.cast(
-                func.substr(SalesOrder.reference, 4),
-                db.bind.dialect.type_descriptor(db.query(SalesOrder.id).column_descriptions[0]['type'])
-            )
-        )
-    ).scalar()
-
-    # Simpler approach: count existing orders
     count = db.query(func.count(SalesOrder.id)).scalar() or 0
     next_num = count + 1
     return f"SO-{next_num:06d}"
