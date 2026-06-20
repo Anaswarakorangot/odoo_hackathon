@@ -10,6 +10,11 @@ import AdminDashboard from './pages/AdminDashboard';
 import ProductsList from './pages/products/ProductsList';
 import SalesOrdersList from './pages/sales/SalesOrdersList';
 import SalesOrderForm from './pages/sales/SalesOrderForm';
+import PurchaseOrdersList from './pages/purchase/PurchaseOrdersList';
+import PurchaseOrderForm from './pages/purchase/PurchaseOrderForm';
+import ManufacturingOrdersList from './pages/manufacturing/ManufacturingOrdersList';
+import ManufacturingOrderForm from './pages/manufacturing/ManufacturingOrderForm';
+import UserManagement from './pages/admin/UserManagement';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -44,7 +49,7 @@ function App() {
 
             {/* Admin dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<PlaceholderPage title="User Management" />} />
+            <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/permissions" element={<PlaceholderPage title="Role Permissions" />} />
             <Route path="/admin/audit" element={<PlaceholderPage title="Audit Logs" />} />
 
@@ -52,8 +57,12 @@ function App() {
             <Route path="/sales" element={<SalesOrdersList />} />
             <Route path="/sales/new" element={<SalesOrderForm />} />
             <Route path="/sales/:id" element={<SalesOrderForm />} />
-            <Route path="/purchase" element={<PlaceholderPage title="Purchase Orders" />} />
-            <Route path="/manufacturing" element={<PlaceholderPage title="Manufacturing Orders" />} />
+            <Route path="/purchase" element={<PurchaseOrdersList />} />
+            <Route path="/purchase/new" element={<PurchaseOrderForm />} />
+            <Route path="/purchase/:id" element={<PurchaseOrderForm />} />
+            <Route path="/manufacturing" element={<ManufacturingOrdersList />} />
+            <Route path="/manufacturing/new" element={<ManufacturingOrderForm />} />
+            <Route path="/manufacturing/:id" element={<ManufacturingOrderForm />} />
             <Route path="/products" element={<ProductsList />} />
             <Route path="/bom" element={<PlaceholderPage title="Bill of Materials" />} />
             <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
