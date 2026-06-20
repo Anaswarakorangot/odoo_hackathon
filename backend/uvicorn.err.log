@@ -4,3 +4,157 @@ INFO:     Started reloader process [34920] using StatReload
 INFO:     Started server process [18048]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
+WARNING:  StatReload detected changes in 'app\core\security.py'. Reloading...
+INFO:     Shutting down
+INFO:     Waiting for application shutdown.
+INFO:     Application shutdown complete.
+INFO:     Finished server process [18048]
+INFO:     Started server process [10212]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\starlette\routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\main.py", line 24, in lifespan
+    print("\u2713 Seeded default role_permissions")
+  File "C:\Users\Programming\anaconda3\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+
+ERROR:    Application startup failed. Exiting.
+WARNING:  StatReload detected changes in 'app\api\routes\users.py'. Reloading...
+INFO:     Started server process [40000]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\starlette\routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\main.py", line 26, in lifespan
+    print("\u2713 role_permissions already populated")
+  File "C:\Users\Programming\anaconda3\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+
+ERROR:    Application startup failed. Exiting.
+WARNING:  StatReload detected changes in 'app\api\routes\auth.py'. Reloading...
+INFO:     Started server process [32852]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\starlette\routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\main.py", line 26, in lifespan
+    print("\u2713 role_permissions already populated")
+  File "C:\Users\Programming\anaconda3\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+
+ERROR:    Application startup failed. Exiting.
+WARNING:  StatReload detected changes in 'app\schemas\auth.py'. Reloading...
+INFO:     Started server process [14404]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\starlette\routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\main.py", line 26, in lifespan
+    print("\u2713 role_permissions already populated")
+  File "C:\Users\Programming\anaconda3\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+
+ERROR:    Application startup failed. Exiting.
+WARNING:  StatReload detected changes in 'app\db\seed_permissions.py'. Reloading...
+INFO:     Started server process [31636]
+INFO:     Waiting for application startup.
+ERROR:    Traceback (most recent call last):
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\starlette\routing.py", line 638, in lifespan
+    async with self.lifespan_context(app) as maybe_state:
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\venv\Lib\site-packages\fastapi\routing.py", line 232, in merged_lifespan
+    async with original_context(app) as maybe_original_state:
+               ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Programming\anaconda3\Lib\contextlib.py", line 210, in __aenter__
+    return await anext(self.gen)
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "S:\Projects\odoo_hackathon\backend\main.py", line 26, in lifespan
+    print("\u2713 role_permissions already populated")
+  File "C:\Users\Programming\anaconda3\Lib\encodings\cp1252.py", line 19, in encode
+    return codecs.charmap_encode(input,self.errors,encoding_table)[0]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+UnicodeEncodeError: 'charmap' codec can't encode character '\u2713' in position 0: character maps to <undefined>
+
+ERROR:    Application startup failed. Exiting.
