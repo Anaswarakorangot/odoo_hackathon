@@ -14,10 +14,12 @@ Rules:
 - Stock movements only at done (terminal).
 - edit_bom permission gates MO delete (admin-only); all other state transitions use production_entry.
 """
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
+import random
+import string
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func
@@ -30,7 +32,7 @@ from app.api.dependencies import (
 )
 from app.models.bom import BOM, BomLine, BomOperation
 from app.models.manufacturing import ManufacturingOrder, MoComponent, MOStatusEnum, WorkOrder
-from app.models.product import Product
+from app.models.product import Product, ProductTypeEnum
 from app.models.sales import SalesOrder
 from app.models.user import User
 from app.schemas.manufacturing_order import (
@@ -42,8 +44,9 @@ from app.schemas.manufacturing_order import (
     WorkOrderResponse,
     ProductBrief,
     UserBrief,
+    MoBrief,
 )
-from app.services import audit_service, stock_service
+from app.services import audit_service, stock_service, procurement_service
 from app.services.stock_service import InsufficientStockError
 
 router = APIRouter(prefix="/manufacturing-orders", tags=["manufacturing-orders"])
@@ -73,6 +76,43 @@ def _get_next_mo_reference(db: Session) -> str:
     ).filter(ManufacturingOrder.reference.like("MO-%")).scalar()
     next_num = (max_num or 0) + 1
     return f"MO-{next_num:06d}"
+
+
+def _generate_vin(db: Session) -> str:
+    """
+    Generate a unique VIN (Vehicle Identification Number) for a manufacturing order.
+
+    Format: DFMyyNNNNNNXXXXXX (17 chars, ISO 3779 standard length)
+    - DFM: DriveForge Motors manufacturer identifier (3)
+    - yy: 2-digit year (2)
+    - NNNNNN: 6-digit sequential counter (6)
+    - XXXXXX: 6 random alphanumeric chars for collision avoidance (6)
+    Total: 3 + 2 + 6 + 6 = 17 characters
+
+    VINs are only generated for finished_good products (actual vehicles).
+    """
+    year = datetime.now().strftime("%y")
+
+    # Count existing VINs for this year to get sequence
+    count = (
+        db.query(func.count(ManufacturingOrder.id))
+        .filter(ManufacturingOrder.vin_number.isnot(None))
+        .filter(ManufacturingOrder.vin_number.like(f"DFM{year}%"))
+        .scalar() or 0
+    )
+    seq = count + 1
+
+    # Random suffix for uniqueness (6 chars to reach 17 total)
+    suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
+    vin = f"DFM{year}{seq:06d}{suffix}"
+
+    # Verify uniqueness (should never collide, but safety first)
+    while db.query(ManufacturingOrder).filter(ManufacturingOrder.vin_number == vin).first():
+        suffix = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        vin = f"DFM{year}{seq:06d}{suffix}"
+
+    return vin
 
 
 def _populate_from_bom(db: Session, mo: ManufacturingOrder, bom: BOM) -> None:
@@ -126,6 +166,8 @@ def _load_mo(db: Session, mo_id: UUID) -> ManufacturingOrder:
             joinedload(ManufacturingOrder.assignee),
             joinedload(ManufacturingOrder.created_by_user),
             joinedload(ManufacturingOrder.source_sales_order),
+            joinedload(ManufacturingOrder.parent_mo),
+            joinedload(ManufacturingOrder.child_mos),
             joinedload(ManufacturingOrder.components).joinedload(MoComponent.component_product),
             joinedload(ManufacturingOrder.work_orders),
         )
@@ -141,6 +183,17 @@ def _build_mo_response(db: Session, mo: ManufacturingOrder) -> ManufacturingOrde
     source_so_ref = None
     if mo.source_sales_order_id and mo.source_sales_order:
         source_so_ref = mo.source_sales_order.reference
+
+    # Parent MO reference
+    parent_mo_ref = None
+    if mo.parent_mo_id and mo.parent_mo:
+        parent_mo_ref = mo.parent_mo.reference
+
+    # Child MOs
+    child_mo_briefs = [
+        MoBrief(id=child.id, reference=child.reference)
+        for child in mo.child_mos
+    ]
 
     components = []
     for comp in mo.components:
@@ -184,8 +237,12 @@ def _build_mo_response(db: Session, mo: ManufacturingOrder) -> ManufacturingOrde
         auto_created=mo.auto_created,
         source_sales_order_id=mo.source_sales_order_id,
         source_sales_order_ref=source_so_ref,
+        parent_mo_id=mo.parent_mo_id,
+        parent_mo_ref=parent_mo_ref,
+        child_mos=child_mo_briefs,
         assignee=UserBrief(id=mo.assignee.id, name=mo.assignee.name) if mo.assignee else None,
         scheduled_date=mo.scheduled_date.isoformat() if mo.scheduled_date else None,
+        vin_number=mo.vin_number,
         components=components,
         work_orders=work_orders,
         created_at=mo.created_at,
@@ -286,13 +343,17 @@ def list_manufacturing_orders(
     """List Manufacturing Orders with optional search and status filter."""
     query = (
         db.query(ManufacturingOrder)
-        .options(joinedload(ManufacturingOrder.finished_product))
+        .options(
+            joinedload(ManufacturingOrder.finished_product),
+            joinedload(ManufacturingOrder.parent_mo),
+        )
     )
 
     if search:
         query = query.join(Product, Product.id == ManufacturingOrder.finished_product_id).filter(
             (ManufacturingOrder.reference.ilike(f"%{search}%"))
             | (Product.name.ilike(f"%{search}%"))
+            | (ManufacturingOrder.vin_number.ilike(f"%{search}%"))
         )
 
     if status_filter:
@@ -314,6 +375,9 @@ def list_manufacturing_orders(
             status=mo.status.value,
             auto_created=mo.auto_created,
             source_sales_order_id=mo.source_sales_order_id,
+            parent_mo_id=mo.parent_mo_id,
+            parent_mo_ref=mo.parent_mo.reference if mo.parent_mo else None,
+            vin_number=mo.vin_number,
             created_at=mo.created_at,
         )
         for mo in orders
@@ -469,6 +533,10 @@ def confirm_manufacturing_order(
     """
     Confirm a Manufacturing Order: draft → confirmed.
     Locks finished_product_id and bom_id from further edits.
+
+    Also triggers recursive MO cascade: if any component has a shortage and
+    the component's product has procure_on_demand=True + procurement_type=manufacturing,
+    a child MO is automatically created (with parent_mo_id linking back to this MO).
     """
     mo = (
         db.query(ManufacturingOrder)
@@ -488,12 +556,41 @@ def confirm_manufacturing_order(
     old_status = mo.status.value
     mo.status = MOStatusEnum.confirmed
 
+    # VIN generation: only for finished_good products (actual vehicles)
+    product = db.query(Product).filter(Product.id == mo.finished_product_id).first()
+    if product and product.product_type == ProductTypeEnum.finished_good and not mo.vin_number:
+        mo.vin_number = _generate_vin(db)
+        audit_service.log_change(
+            db, user_id=current_user.id, module="Manufacturing",
+            record_type="ManufacturingOrder", record_id=mo.id,
+            action="vin_assigned",
+            field_changed="vin_number",
+            new_value=mo.vin_number,
+        )
+
     audit_service.log_change(
         db, user_id=current_user.id, module="Manufacturing",
         record_type="ManufacturingOrder", record_id=mo.id,
         action="status_changed", field_changed="status",
         old_value=old_status, new_value=mo.status.value,
     )
+
+    # Recursive MO cascade: auto-create child MOs for component shortages
+    child_mos = procurement_service.check_mo_component_shortages(
+        db=db,
+        mo=mo,
+        current_user=current_user,
+    )
+    if child_mos:
+        # Log for visibility (child MOs are already audit-logged individually)
+        refs = [child.reference for child in child_mos]
+        audit_service.log_change(
+            db, user_id=current_user.id, module="Manufacturing",
+            record_type="ManufacturingOrder", record_id=mo.id,
+            action="cascade_triggered",
+            field_changed="child_mos",
+            new_value=",".join(refs),
+        )
 
     db.commit()
     return _build_mo_response(db, _load_mo(db, mo_id))
@@ -552,6 +649,9 @@ def produce_manufacturing_order(
     """
     Mark production as done: in_progress → done.
 
+    Pre-conditions:
+    - All "Road Test" work orders must have pass_fail = "pass"
+
     Terminal stock movements (all-or-nothing in one transaction):
     - Finished product stock += quantity  (mo_produce)
     - Each component stock -= consumed_qty  (mo_consume)
@@ -562,6 +662,7 @@ def produce_manufacturing_order(
         db.query(ManufacturingOrder)
         .options(
             joinedload(ManufacturingOrder.components),
+            joinedload(ManufacturingOrder.work_orders),
         )
         .filter(ManufacturingOrder.id == mo_id)
         .with_for_update()
@@ -575,6 +676,20 @@ def produce_manufacturing_order(
             status_code=409,
             detail=f"Cannot produce: status is {mo.status.value}, must be in_progress"
         )
+
+    # Road Test validation: any work order containing "road test" must pass
+    road_tests = [
+        wo for wo in mo.work_orders
+        if "road test" in wo.operation_name.lower()
+    ]
+    for rt in road_tests:
+        if rt.pass_fail != "pass":
+            status_msg = rt.pass_fail or "not recorded"
+            raise HTTPException(
+                status_code=409,
+                detail=f"Cannot produce: Road Test '{rt.operation_name}' has status '{status_msg}'. "
+                       f"All road tests must pass before marking production complete."
+            )
 
     old_status = mo.status.value
 

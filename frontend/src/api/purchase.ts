@@ -14,7 +14,7 @@ export const purchaseOrdersApi = {
     if (search) params.append('search', search);
     if (status) params.append('status', status);
     const response = await apiClient.get<PurchaseOrderListItem[]>(
-      `/purchase-orders/${params.toString() ? '?' + params.toString() : ''}`
+      `/purchase-orders/${params.toString() ? '?' + params.toString() : ''}`,
     );
     return response.data;
   },
@@ -55,8 +55,9 @@ export const purchaseOrdersApi = {
 };
 
 export const vendorsApi = {
-  list: async (): Promise<Vendor[]> => {
-    const response = await apiClient.get<Vendor[]>('/vendors');
+  list: async (search?: string): Promise<Vendor[]> => {
+    const params = search ? `?search=${encodeURIComponent(search)}` : '';
+    const response = await apiClient.get<Vendor[]>(`/vendors/${params}`);
     return response.data;
   },
 };
@@ -64,6 +65,13 @@ export const vendorsApi = {
 export const productsApi = {
   list: async (): Promise<ProductBrief[]> => {
     const response = await apiClient.get<ProductBrief[]>('/products/');
+    return response.data;
+  },
+};
+
+export const productsForPurchaseApi = {
+  list: async (): Promise<{ id: string; name: string; cost_price: number; on_hand_qty: number }[]> => {
+    const response = await apiClient.get('/products/');
     return response.data;
   },
 };

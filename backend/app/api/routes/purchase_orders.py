@@ -11,6 +11,7 @@ This mirrors Sales Orders exactly, with:
 - received_qty instead of delivered_qty
 - Stock movement is POSITIVE (adding stock on receipt)
 """
+from datetime import date
 from decimal import Decimal
 from typing import List, Optional
 from uuid import UUID
@@ -91,6 +92,9 @@ def build_po_response(po: PurchaseOrder) -> PurchaseOrderResponse:
         if po.responsible_person
         else None,
         status=po.status.value,
+        expected_delivery_date=po.expected_delivery_date.isoformat()
+        if po.expected_delivery_date
+        else None,
         auto_created=po.auto_created,
         source_sales_order_id=po.source_sales_order_id,
         source_sales_order_ref=source_so_ref,
@@ -157,12 +161,24 @@ def create_purchase_order(
     # Generate reference
     reference = get_next_po_reference(db)
 
+    # Parse expected_delivery_date if provided
+    expected_date = None
+    if request.expected_delivery_date:
+        try:
+            expected_date = date.fromisoformat(request.expected_delivery_date)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid expected_delivery_date format, use YYYY-MM-DD"
+            )
+
     # Create purchase order with vendor address snapshot
     po = PurchaseOrder(
         reference=reference,
         vendor_id=request.vendor_id,
         vendor_address=vendor.address,  # Snapshot at order-create time
         responsible_person_id=responsible_person_id,
+        expected_delivery_date=expected_date,
         status=POStatusEnum.draft,
         auto_created=False,
         created_by=current_user.id,
@@ -262,6 +278,9 @@ def list_purchase_orders(
                 reference=po.reference,
                 vendor_name=po.vendor.name,
                 status=po.status.value,
+                expected_delivery_date=po.expected_delivery_date.isoformat()
+                if po.expected_delivery_date
+                else None,
                 auto_created=po.auto_created,
                 total_amount=total_amount,
                 created_at=po.created_at,
@@ -434,6 +453,33 @@ def update_purchase_order(
                     old_value=str(old_value) if old_value else None,
                     new_value=str(new_value) if new_value else None,
                 )
+
+    # Handle expected_delivery_date
+    if "expected_delivery_date" in update_data:
+        old_date = po.expected_delivery_date
+        new_date_str = update_data["expected_delivery_date"]
+        new_date = None
+        if new_date_str:
+            try:
+                new_date = date.fromisoformat(new_date_str)
+            except ValueError:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Invalid expected_delivery_date format, use YYYY-MM-DD"
+                )
+        if old_date != new_date:
+            po.expected_delivery_date = new_date
+            audit_service.log_change(
+                db,
+                user_id=current_user.id,
+                module="Purchase",
+                record_type="PurchaseOrder",
+                record_id=po.id,
+                action="updated",
+                field_changed="expected_delivery_date",
+                old_value=old_date.isoformat() if old_date else None,
+                new_value=new_date.isoformat() if new_date else None,
+            )
 
     # Handle lines update (only in draft status for full edit)
     if "lines" in update_data and update_data["lines"] is not None:

@@ -17,6 +17,8 @@ import ManufacturingOrderForm from './pages/manufacturing/ManufacturingOrderForm
 import BomList from './pages/bom/BomList';
 import BomForm from './pages/bom/BomForm';
 import AuditLogs from './pages/admin/AuditLogs';
+import UserManagement from './pages/admin/UserManagement';
+import RecallLookup from './pages/recall/RecallLookup';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -51,7 +53,7 @@ function App() {
 
             {/* Admin dashboard */}
             <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/users" element={<PlaceholderPage title="User Management" />} />
+            <Route path="/admin/users" element={<UserManagement />} />
             <Route path="/admin/permissions" element={<PlaceholderPage title="Role Permissions" />} />
             <Route path="/admin/audit" element={<AuditLogs />} />
 
@@ -70,6 +72,7 @@ function App() {
             <Route path="/bom/new" element={<BomForm />} />
             <Route path="/bom/:id" element={<BomForm />} />
             <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
+            <Route path="/recall" element={<RecallLookup />} />
 
             {/* Profile and settings */}
             <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />

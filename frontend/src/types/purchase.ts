@@ -19,6 +19,15 @@ export interface UserBrief {
   name: string;
 }
 
+export interface ProductBrief {
+  id: string;
+  name: string;
+  cost_price: number;
+  sales_price: number;
+  on_hand_qty: number;
+  free_to_use_qty?: number;
+}
+
 export interface PurchaseOrder {
   id: string;
   reference: string;
@@ -68,18 +77,11 @@ export interface PurchaseOrderReceiveRequest {
 export interface Vendor {
   id: string;
   name: string;
+  address?: string;
+  created_at?: string;
 }
 
-export interface ProductBrief {
-  id: string;
-  name: string;
-  cost_price: number;
-  sales_price: number;
-  on_hand_qty: number;
-  free_to_use_qty?: number;
-}
-
-export const STATUS_COLORS: Record<string, string> = {
+export const PO_STATUS_COLORS: Record<string, string> = {
   draft: 'bg-slate-500/20 text-slate-300',
   confirmed: 'bg-blue-500/20 text-blue-300',
   partially_received: 'bg-amber-500/20 text-amber-300',
@@ -87,10 +89,13 @@ export const STATUS_COLORS: Record<string, string> = {
   cancelled: 'bg-red-500/20 text-red-300',
 };
 
-export const STATUS_LABELS: Record<string, string> = {
+export const PO_STATUS_LABELS: Record<string, string> = {
   draft: 'Draft',
   confirmed: 'Confirmed',
   partially_received: 'Partially Received',
   fully_received: 'Fully Received',
   cancelled: 'Cancelled',
 };
+
+export const STATUS_COLORS = PO_STATUS_COLORS;
+export const STATUS_LABELS = PO_STATUS_LABELS;

@@ -1,41 +1,40 @@
-import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { manufacturingOrdersApi, bomsApi } from '../../api/manufacturing';
-import { productsApi } from '../../api/purchase';
-import type {
-  ManufacturingOrder,
-  BomOption,
-  MoComponent,
-  WorkOrder,
-  MoComponentUpdate,
-  WorkOrderUpdate,
-} from '../../types/manufacturing';
-import type { ProductBrief } from '../../types/purchase';
+import { useEffect, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
+import { bomsApi, manufacturingOrdersApi, productsForMoApi } from '../../api/manufacturing';
+import { usersApi } from '../../api/users';
+import type { ManufacturingOrder } from '../../types/manufacturing';
 import { MO_STATUS_COLORS, MO_STATUS_LABELS } from '../../types/manufacturing';
+
+type ProductLookup = { id: string; name: string; product_type: string };
+type BomLookup = { id: string; reference: string; finished_product_id: string; finished_product_name: string };
+type UserLookup = { id: string; name: string };
+type ComponentRow = { id: string; name: string; toConsume: number; consumedQty: number; batchNumber: string; freeToUseQty?: number };
+type WorkOrderRow = { id: string; sequence: number; operationName: string; workCenter: string; expectedDuration: number; realDuration: number; passFail: string };
 
 export default function ManufacturingOrderForm() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { isSystemAdmin } = useAuth();
   const isNew = !id || id === 'new';
 
   const [order, setOrder] = useState<ManufacturingOrder | null>(null);
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [actionError, setActionError] = useState('');
 
-  // Header fields
   const [finishedProductId, setFinishedProductId] = useState('');
   const [bomId, setBomId] = useState('');
-  const [quantity, setQuantity] = useState<number>(1);
+  const [quantity, setQuantity] = useState(1);
+  const [assigneeId, setAssigneeId] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
 
-  // Sub-table editable state
-  const [components, setComponents] = useState<MoComponent[]>([]);
-  const [workOrders, setWorkOrders] = useState<WorkOrder[]>([]);
-
-  // Lookups
-  const [products, setProducts] = useState<ProductBrief[]>([]);
-  const [boms, setBoms] = useState<BomOption[]>([]);
+  const [components, setComponents] = useState<ComponentRow[]>([]);
+  const [workOrders, setWorkOrders] = useState<WorkOrderRow[]>([]);
+  const [products, setProducts] = useState<ProductLookup[]>([]);
+  const [boms, setBoms] = useState<BomLookup[]>([]);
+  const [users, setUsers] = useState<UserLookup[]>([]);
 
   useEffect(() => {
     loadLookups();
@@ -44,12 +43,14 @@ export default function ManufacturingOrderForm() {
 
   const loadLookups = async () => {
     try {
-      const [productsData, bomsData] = await Promise.all([
-        productsApi.list(),
-        bomsApi.listBrief(),
-      ]);
-      setProducts(productsData);
-      setBoms(bomsData);
+      const [productData, bomData] = await Promise.all([productsForMoApi.list(), bomsApi.list()]);
+      setProducts(productData);
+      setBoms(bomData);
+      try {
+        setUsers(await usersApi.list());
+      } catch {
+        // ignore for restricted users
+      }
     } catch (err) {
       console.error('Failed to load lookups', err);
     }
@@ -63,22 +64,17 @@ export default function ManufacturingOrderForm() {
       setFinishedProductId(data.finished_product.id);
       setBomId(data.bom_id || '');
       setQuantity(Number(data.quantity));
+      setAssigneeId(data.assignee?.id || '');
       setScheduledDate(data.scheduled_date || '');
-      setComponents(data.components);
-      setWorkOrders(data.work_orders);
-    } catch (err) {
+      setComponents(data.components.map((component) => ({ id: component.id, name: component.component_product_name, toConsume: Number(component.to_consume), consumedQty: Number(component.consumed_qty), batchNumber: component.batch_number || '', freeToUseQty: component.free_to_use_qty !== null && component.free_to_use_qty !== undefined ? Number(component.free_to_use_qty) : undefined })));
+      setWorkOrders(data.work_orders.map((workOrder) => ({ id: workOrder.id, sequence: workOrder.sequence, operationName: workOrder.operation_name, workCenter: workOrder.work_center, expectedDuration: workOrder.expected_duration_min, realDuration: workOrder.real_duration_min || 0, passFail: workOrder.pass_fail || '' })));
+    } catch {
       setError('Failed to load manufacturing order');
     } finally {
       setLoading(false);
     }
   };
 
-  const status = order?.status || 'draft';
-  const isTerminal = status === 'done' || status === 'cancelled';
-  const isHeaderLocked = status !== 'draft';
-  const isSubEditable = status === 'confirmed' || status === 'in_progress';
-
-  // ----- Header save (draft only) -----
   const handleSave = async () => {
     if (!finishedProductId) {
       setError('Please select a finished product');
@@ -91,23 +87,15 @@ export default function ManufacturingOrderForm() {
 
     setSaving(true);
     setError('');
+    setActionError('');
     try {
       if (isNew) {
-        const created = await manufacturingOrdersApi.create({
-          finished_product_id: finishedProductId,
-          quantity,
-          bom_id: bomId || undefined,
-          scheduled_date: scheduledDate || undefined,
-        });
+        const created = await manufacturingOrdersApi.create({ finished_product_id: finishedProductId, quantity, bom_id: bomId || undefined, assignee_id: assigneeId || undefined, scheduled_date: scheduledDate || undefined });
         navigate(`/manufacturing/${created.id}`);
       } else if (order) {
-        await manufacturingOrdersApi.update(order.id, {
-          finished_product_id: finishedProductId,
-          bom_id: bomId || undefined,
-          quantity,
-          scheduled_date: scheduledDate || undefined,
-        });
-        loadOrder(order.id);
+        const updated = await manufacturingOrdersApi.update(order.id, { finished_product_id: finishedProductId, bom_id: bomId || undefined, quantity, assignee_id: assigneeId || undefined, scheduled_date: scheduledDate || undefined, components: components.map((component) => ({ component_id: component.id, consumed_qty: component.consumedQty, batch_number: component.batchNumber || undefined })), work_orders: workOrders.map((workOrder) => ({ work_order_id: workOrder.id, real_duration_min: workOrder.realDuration, pass_fail: workOrder.passFail || undefined })) });
+        setOrder(updated);
+        await loadOrder(updated.id);
       }
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to save manufacturing order');
@@ -116,395 +104,132 @@ export default function ManufacturingOrderForm() {
     }
   };
 
-  // ----- Save sub-table edits (confirmed / in_progress) -----
-  const handleSaveSubTables = async () => {
-    if (!order) return;
-    setSaving(true);
-    setError('');
+  const doAction = async (action: () => Promise<ManufacturingOrder>) => {
+    setActionError('');
     try {
-      const compUpdates: MoComponentUpdate[] = components.map((c) => ({
-        component_id: c.id,
-        consumed_qty: Number(c.consumed_qty),
-        batch_number: c.batch_number || undefined,
-      }));
-      const woUpdates: WorkOrderUpdate[] = workOrders.map((w) => ({
-        work_order_id: w.id,
-        real_duration_min: w.real_duration_min ?? undefined,
-        pass_fail: w.pass_fail || undefined,
-      }));
-
-      await manufacturingOrdersApi.update(order.id, {
-        components: compUpdates,
-        work_orders: woUpdates,
-      });
-      loadOrder(order.id);
+      const updated = await action();
+      setOrder(updated);
+      await loadOrder(updated.id);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to save updates');
-    } finally {
-      setSaving(false);
+      setActionError(err.response?.data?.detail || 'Action failed');
     }
   };
 
-  const handleConfirm = async () => {
-    if (!order) return;
-    if (!confirm('Confirm this MO? Finished product and BoM will be locked.')) return;
-    setSaving(true);
-    try {
-      await manufacturingOrdersApi.confirm(order.id);
-      loadOrder(order.id);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to confirm');
-    } finally {
-      setSaving(false);
-    }
+  const handleBomChange = (selectedBomId: string) => {
+    setBomId(selectedBomId);
+    if (!selectedBomId) return;
+    const selectedBom = boms.find((bom) => bom.id === selectedBomId);
+    if (selectedBom) setFinishedProductId(selectedBom.finished_product_id);
   };
 
-  const handleStart = async () => {
-    if (!order) return;
-    if (!confirm('Start production for this MO?')) return;
-    setSaving(true);
-    try {
-      await manufacturingOrdersApi.start(order.id);
-      loadOrder(order.id);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to start');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleProduce = async () => {
-    if (!order) return;
-    if (!confirm('Mark production as done? This will move stock (consume components and add finished product).')) return;
-    setSaving(true);
-    try {
-      await manufacturingOrdersApi.produce(order.id);
-      loadOrder(order.id);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to produce');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleCancel = async () => {
-    if (!order) return;
-    if (!confirm('Cancel this MO?')) return;
-    setSaving(true);
-    try {
-      await manufacturingOrdersApi.cancel(order.id);
-      loadOrder(order.id);
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to cancel');
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!order) return;
-    if (!confirm(`Delete ${order.reference}? This cannot be undone.`)) return;
-    setSaving(true);
-    try {
-      await manufacturingOrdersApi.delete(order.id);
-      navigate('/manufacturing');
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to delete');
-    } finally {
-      setSaving(false);
-    }
-  };
+  const status = order?.status || 'draft';
+  const isDraft = status === 'draft';
+  const isTerminal = status === 'done' || status === 'cancelled';
+  const filteredBoms = finishedProductId ? boms.filter((bom) => bom.finished_product_id === finishedProductId) : boms;
 
   if (loading) {
-    return (
-      <div className="flex justify-center py-12">
-        <div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" /></div>;
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
+    <div className="max-w-5xl space-y-6">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <button
-            onClick={() => navigate('/manufacturing')}
-            className="p-2 hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <svg className="w-5 h-5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-            </svg>
-          </button>
+          <button onClick={() => navigate('/manufacturing')} className="rounded-lg p-2 transition-colors hover:bg-slate-800"><span className="text-slate-400">←</span></button>
           <div>
-            <h1 className="text-2xl font-bold text-white">
-              {isNew ? 'New Manufacturing Order' : order?.reference}
-            </h1>
-            {order && (
-              <div className="flex items-center gap-2 mt-1">
-                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${MO_STATUS_COLORS[status]}`}>
-                  {MO_STATUS_LABELS[status]}
-                </span>
-                {order.auto_created && order.source_sales_order_ref && (
-                  <span className="text-xs text-slate-400">
-                    Auto-created from {order.source_sales_order_ref}
-                  </span>
-                )}
-              </div>
-            )}
+            <h1 className="text-2xl font-bold text-white">{isNew ? 'New Manufacturing Order' : order?.reference}</h1>
+            {order && <span className={`mt-1.5 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${MO_STATUS_COLORS[status]}`}>{MO_STATUS_LABELS[status]}</span>}
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="flex gap-2">
-          {status === 'draft' && (
-            <>
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-medium hover:from-cyan-400 hover:to-blue-400 disabled:opacity-50"
-              >
-                {saving ? 'Saving...' : 'Save'}
-              </button>
-              {!isNew && (
-                <>
-                  <button
-                    onClick={handleConfirm}
-                    disabled={saving}
-                    className="px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-400 disabled:opacity-50"
-                  >
-                    Confirm
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    disabled={saving}
-                    className="px-4 py-2 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-400 disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    onClick={handleDelete}
-                    disabled={saving}
-                    className="px-4 py-2 bg-red-500 text-white rounded-xl font-medium hover:bg-red-400 disabled:opacity-50"
-                  >
-                    Delete
-                  </button>
-                </>
-              )}
-            </>
-          )}
-          {status === 'confirmed' && (
-            <>
-              <button
-                onClick={handleSaveSubTables}
-                disabled={saving}
-                className="px-4 py-2 bg-slate-700 text-white rounded-xl font-medium hover:bg-slate-600 disabled:opacity-50"
-              >
-                Save Updates
-              </button>
-              <button
-                onClick={handleStart}
-                disabled={saving}
-                className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-500 text-white rounded-xl font-medium hover:from-cyan-400 hover:to-blue-400"
-              >
-                Start
-              </button>
-              <button
-                onClick={handleCancel}
-                disabled={saving}
-                className="px-4 py-2 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-400 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </>
-          )}
-          {status === 'in_progress' && (
-            <>
-              <button
-                onClick={handleSaveSubTables}
-                disabled={saving}
-                className="px-4 py-2 bg-slate-700 text-white rounded-xl font-medium hover:bg-slate-600 disabled:opacity-50"
-              >
-                Save Updates
-              </button>
-              <button
-                onClick={handleProduce}
-                disabled={saving}
-                className="px-4 py-2 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl font-medium hover:from-emerald-400 hover:to-teal-400"
-              >
-                Produce (Done)
-              </button>
-              <button
-                onClick={handleCancel}
-                disabled={saving}
-                className="px-4 py-2 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-400 disabled:opacity-50"
-              >
-                Cancel
-              </button>
-            </>
-          )}
-          {isTerminal && (
-            <button
-              onClick={() => navigate('/manufacturing')}
-              className="px-4 py-2 bg-slate-700 text-white rounded-xl font-medium hover:bg-slate-600"
-            >
-              Close
-            </button>
-          )}
+          {!isTerminal && <button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>}
+          {isSystemAdmin && status === 'draft' && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.confirm(order!.id))} className="rounded-xl bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-500">Confirm</button>}
+          {status === 'confirmed' && <button onClick={() => doAction(() => manufacturingOrdersApi.start(order!.id))} className="rounded-xl bg-violet-600 px-4 py-2 text-white transition-colors hover:bg-violet-500">Start Production</button>}
+          {status === 'in_progress' && <button onClick={() => doAction(() => manufacturingOrdersApi.produce(order!.id))} className="rounded-xl bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-500">Produce (Mark Done)</button>}
+          {!isTerminal && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.cancel(order!.id))} className="rounded-xl bg-slate-800 px-4 py-2 text-slate-300 transition-colors hover:bg-slate-700">Cancel Order</button>}
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400">
-          {error}
-        </div>
-      )}
+      {order?.auto_created && order.source_sales_order_ref && <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-sm text-purple-300">🔗 Auto-created from Sales Order <strong>{order.source_sales_order_ref}</strong></div>}
+      {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">⚠️ {error}</div>}
+      {actionError && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">⚠️ {actionError}</div>}
 
-      {/* Header form */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
-        <div className="grid grid-cols-2 gap-6">
+      <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-6">
+        <h2 className="text-lg font-semibold text-white">Order Specification</h2>
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Finished Product *</label>
-            <select
-              value={finishedProductId}
-              onChange={(e) => setFinishedProductId(e.target.value)}
-              disabled={isHeaderLocked || isTerminal}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
+            <label className="mb-2 block text-sm font-medium text-slate-400">Finished Product *</label>
+            <select value={finishedProductId} onChange={(e) => setFinishedProductId(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
               <option value="">Select a product</option>
-              {products.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+              {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
             </select>
-            {isHeaderLocked && !isNew && (
-              <p className="text-xs text-slate-500 mt-1">Locked after confirmation</p>
-            )}
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Quantity *</label>
-            <input
-              type="number"
-              min="1"
-              step="1"
-              value={quantity}
-              onChange={(e) => setQuantity(Number(e.target.value) || 0)}
-              disabled={isHeaderLocked || isTerminal}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Bill of Materials</label>
-            <select
-              value={bomId}
-              onChange={(e) => setBomId(e.target.value)}
-              disabled={isHeaderLocked || isTerminal}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50"
-            >
-              <option value="">(none — components must be set manually)</option>
-              {boms.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.reference}
-                </option>
-              ))}
+            <label className="mb-2 block text-sm font-medium text-slate-400">Bill of Materials</label>
+            <select value={bomId} onChange={(e) => handleBomChange(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
+              <option value="">Select BoM...</option>
+              {filteredBoms.map((bom) => <option key={bom.id} value={bom.id}>{bom.reference} ({bom.finished_product_name})</option>)}
             </select>
-            <p className="text-xs text-slate-500 mt-1">
-              When set, components and work orders are auto-populated and scaled to quantity.
-            </p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-400 mb-2">Scheduled Date</label>
-            <input
-              type="date"
-              value={scheduledDate}
-              onChange={(e) => setScheduledDate(e.target.value)}
-              disabled={isHeaderLocked || isTerminal}
-              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 disabled:opacity-50"
-            />
+            <label className="mb-2 block text-sm font-medium text-slate-400">Quantity *</label>
+            <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value) || 0)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50" />
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-400">Assignee</label>
+            <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
+              <option value="">Select assignee...</option>
+              {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
+            </select>
+          </div>
+
+          <div>
+            <label className="mb-2 block text-sm font-medium text-slate-400">Scheduled Date</label>
+            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50" />
           </div>
         </div>
+      </div>
 
-        {/* Components Sub-table */}
-        {!isNew && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <label className="text-sm font-medium text-slate-400">Components</label>
-              {isSubEditable && (
-                <p className="text-xs text-slate-500">
-                  Editable: Consumed Qty &amp; Batch Number
-                </p>
-              )}
+      {!isNew && (
+        <>
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Components</h2>
+              <span className="text-xs text-slate-500">Editable: Consumed Qty &amp; Batch Number</span>
             </div>
-            <div className="border border-slate-800 rounded-xl overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-slate-800">
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-800/50">
-                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Component</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-slate-400 w-28">To Consume</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-slate-400 w-32">Consumed</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-40">Batch #</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-slate-400 w-28">Available</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-400">Component</th>
+                    <th className="w-28 px-4 py-3 text-right text-sm font-medium text-slate-400">To Consume</th>
+                    <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Consumed</th>
+                    <th className="w-40 px-4 py-3 text-left text-sm font-medium text-slate-400">Batch #</th>
+                    <th className="w-28 px-4 py-3 text-right text-sm font-medium text-slate-400">Available</th>
                   </tr>
                 </thead>
                 <tbody>
                   {components.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="px-4 py-8 text-center text-slate-500">
-                        No components. Pick a BoM in draft to auto-populate, or add manually.
-                      </td>
-                    </tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No components loaded</td></tr>
                   ) : (
-                    components.map((comp, idx) => {
-                      const available = comp.free_to_use_qty;
-                      const shortage =
-                        available !== undefined && available !== null && Number(available) < Number(comp.to_consume);
+                    components.map((component, index) => {
+                      const available = component.freeToUseQty;
+                      const shortage = available !== undefined && Number(available) < Number(component.toConsume);
                       return (
-                        <tr key={comp.id} className="border-t border-slate-800/50">
-                          <td className="px-4 py-3 text-slate-200">{comp.component_product_name}</td>
-                          <td className="px-4 py-3 text-right text-slate-400">{comp.to_consume}</td>
+                        <tr key={component.id} className="border-t border-slate-800/50">
+                          <td className="px-4 py-3 text-slate-200">{component.name}</td>
+                          <td className="px-4 py-3 text-right text-slate-400">{component.toConsume}</td>
                           <td className="px-4 py-3 text-right">
-                            {isSubEditable ? (
-                              <input
-                                type="number"
-                                min="0"
-                                step="any"
-                                value={comp.consumed_qty}
-                                onChange={(e) => {
-                                  const v = Number(e.target.value) || 0;
-                                  const next = [...components];
-                                  next[idx] = { ...comp, consumed_qty: v };
-                                  setComponents(next);
-                                }}
-                                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                              />
-                            ) : (
-                              <span className="text-slate-200">{comp.consumed_qty}</span>
-                            )}
+                            <input type="number" min={0} step="any" value={component.consumedQty} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, consumedQty: Number(e.target.value) || 0 } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200" />
                           </td>
                           <td className="px-4 py-3">
-                            {isSubEditable ? (
-                              <input
-                                type="text"
-                                value={comp.batch_number || ''}
-                                onChange={(e) => {
-                                  const next = [...components];
-                                  next[idx] = { ...comp, batch_number: e.target.value };
-                                  setComponents(next);
-                                }}
-                                className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                              />
-                            ) : (
-                              <span className="text-slate-400">{comp.batch_number || '—'}</span>
-                            )}
+                            <input type="text" value={component.batchNumber} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, batchNumber: e.target.value } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200" />
                           </td>
-                          <td className={`px-4 py-3 text-right ${shortage ? 'text-amber-400' : 'text-slate-400'}`}>
-                            {available ?? '—'}
-                            {shortage && <span className="ml-1">⚠️</span>}
-                          </td>
+                          <td className={`px-4 py-3 text-right ${shortage ? 'text-amber-400' : 'text-slate-400'}`}>{available ?? '—'}{shortage && <span className="ml-1">⚠️</span>}</td>
                         </tr>
                       );
                     })
@@ -513,82 +238,37 @@ export default function ManufacturingOrderForm() {
               </table>
             </div>
           </div>
-        )}
 
-        {/* Work Orders Sub-table */}
-        {!isNew && (
-          <div>
-            <div className="flex items-center justify-between mb-4">
-              <label className="text-sm font-medium text-slate-400">Work Orders</label>
-              {isSubEditable && (
-                <p className="text-xs text-slate-500">
-                  Editable: Real Duration &amp; Pass/Fail
-                </p>
-              )}
+          <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-lg font-semibold text-white">Work Orders</h2>
+              <span className="text-xs text-slate-500">Editable: Real Duration &amp; Pass/Fail</span>
             </div>
-            <div className="border border-slate-800 rounded-xl overflow-hidden">
+            <div className="overflow-hidden rounded-xl border border-slate-800">
               <table className="w-full">
                 <thead>
                   <tr className="bg-slate-800/50">
-                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-16">Seq</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Operation</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400">Work Center</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-slate-400 w-32">Expected (min)</th>
-                    <th className="text-right px-4 py-3 text-sm font-medium text-slate-400 w-32">Real (min)</th>
-                    <th className="text-left px-4 py-3 text-sm font-medium text-slate-400 w-32">Pass/Fail</th>
+                    <th className="px-4 py-3 text-left text-sm font-medium text-slate-400">Operation</th>
+                    <th className="w-24 px-4 py-3 text-right text-sm font-medium text-slate-400">Seq</th>
+                    <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Expected</th>
+                    <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Actual</th>
+                    <th className="w-28 px-4 py-3 text-left text-sm font-medium text-slate-400">Pass/Fail</th>
                   </tr>
                 </thead>
                 <tbody>
                   {workOrders.length === 0 ? (
-                    <tr>
-                      <td colSpan={6} className="px-4 py-8 text-center text-slate-500">
-                        No work orders. Pick a BoM in draft to auto-populate.
-                      </td>
-                    </tr>
+                    <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No work orders loaded</td></tr>
                   ) : (
-                    workOrders.map((wo, idx) => (
-                      <tr key={wo.id} className="border-t border-slate-800/50">
-                        <td className="px-4 py-3 text-slate-400">{wo.sequence}</td>
-                        <td className="px-4 py-3 text-slate-200">{wo.operation_name}</td>
-                        <td className="px-4 py-3 text-slate-400">{wo.work_center}</td>
-                        <td className="px-4 py-3 text-right text-slate-400">{wo.expected_duration_min}</td>
+                    workOrders.map((workOrder, index) => (
+                      <tr key={workOrder.id} className="border-t border-slate-800/50">
+                        <td className="px-4 py-3 text-slate-200">{workOrder.operationName}</td>
+                        <td className="px-4 py-3 text-right text-slate-400">{workOrder.sequence}</td>
+                        <td className="px-4 py-3 text-right text-slate-400">{workOrder.expectedDuration}</td>
                         <td className="px-4 py-3 text-right">
-                          {isSubEditable ? (
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              value={wo.real_duration_min ?? ''}
-                              onChange={(e) => {
-                                const next = [...workOrders];
-                                const v = e.target.value === '' ? undefined : Number(e.target.value);
-                                next[idx] = { ...wo, real_duration_min: v };
-                                setWorkOrders(next);
-                              }}
-                              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 text-right focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                            />
-                          ) : (
-                            <span className="text-slate-200">{wo.real_duration_min ?? '—'}</span>
-                          )}
+                          <input type="number" min={0} step="any" value={workOrder.realDuration} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, realDuration: Number(e.target.value) || 0 } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200" />
                         </td>
                         <td className="px-4 py-3">
-                          {isSubEditable ? (
-                            <select
-                              value={wo.pass_fail || ''}
-                              onChange={(e) => {
-                                const next = [...workOrders];
-                                next[idx] = { ...wo, pass_fail: e.target.value || undefined };
-                                setWorkOrders(next);
-                              }}
-                              className="w-full bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
-                            >
-                              <option value="">—</option>
-                              <option value="pass">Pass</option>
-                              <option value="fail">Fail</option>
-                            </select>
-                          ) : (
-                            <span className="text-slate-400">{wo.pass_fail || '—'}</span>
-                          )}
+                          <input type="text" value={workOrder.passFail} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, passFail: e.target.value } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200" />
                         </td>
                       </tr>
                     ))
@@ -597,7 +277,17 @@ export default function ManufacturingOrderForm() {
               </table>
             </div>
           </div>
-        )}
+        </>
+      )}
+
+      {order?.auto_created && order.source_sales_order_ref && <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-sm text-purple-300">🔗 Auto-created from Sales Order <strong>{order.source_sales_order_ref}</strong></div>}
+
+      <div className="flex flex-wrap gap-2">
+        {!isTerminal && <button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>}
+        {isSystemAdmin && status === 'draft' && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.confirm(order!.id))} className="rounded-xl bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-500">Confirm</button>}
+        {status === 'confirmed' && <button onClick={() => doAction(() => manufacturingOrdersApi.start(order!.id))} className="rounded-xl bg-violet-600 px-4 py-2 text-white transition-colors hover:bg-violet-500">Start Production</button>}
+        {status === 'in_progress' && <button onClick={() => doAction(() => manufacturingOrdersApi.produce(order!.id))} className="rounded-xl bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-500">Produce (Mark Done)</button>}
+        {!isTerminal && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.cancel(order!.id))} className="rounded-xl bg-slate-800 px-4 py-2 text-slate-300 transition-colors hover:bg-slate-700">Cancel Order</button>}
       </div>
     </div>
   );

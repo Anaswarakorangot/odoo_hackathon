@@ -8,10 +8,6 @@ export interface UserBrief {
   name: string;
 }
 
-// -----------------------------
-// BoM types
-// -----------------------------
-
 export interface BomLine {
   id: string;
   component_product_id: string;
@@ -74,10 +70,6 @@ export interface BomUpdateRequest {
   bom_lines?: BomLineCreate[];
   bom_operations?: BomOperationCreate[];
 }
-
-// -----------------------------
-// Manufacturing Order types
-// -----------------------------
 
 export type MOStatus = 'draft' | 'confirmed' | 'in_progress' | 'done' | 'cancelled';
 
@@ -153,10 +145,10 @@ export interface WorkOrderUpdate {
 
 export interface ManufacturingOrderUpdateRequest {
   finished_product_id?: string;
-  bom_id?: string;
-  quantity?: number;
   assignee_id?: string;
   scheduled_date?: string;
+  bom_id?: string;
+  quantity?: number;
   components?: MoComponentUpdate[];
   work_orders?: WorkOrderUpdate[];
 }

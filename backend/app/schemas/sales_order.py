@@ -32,6 +32,7 @@ class SalesOrderCreateRequest(BaseModel):
     """Request to create a new sales order."""
     customer_id: UUID
     salesperson_id: Optional[UUID] = None
+    expected_delivery_date: Optional[str] = None  # ISO date string YYYY-MM-DD
     line_items: List[SalesOrderLineCreate] = Field(min_length=1)
 
 
@@ -40,6 +41,7 @@ class SalesOrderUpdateRequest(BaseModel):
     customer_id: Optional[UUID] = None
     customer_address: Optional[str] = None
     salesperson_id: Optional[UUID] = None
+    expected_delivery_date: Optional[str] = None  # ISO date string YYYY-MM-DD
     lines: Optional[List[SalesOrderLineUpdate]] = None
 
 
@@ -89,6 +91,7 @@ class SalesOrderResponse(BaseModel):
     customer_address: Optional[str] = None
     salesperson: Optional[UserBrief] = None
     status: str
+    expected_delivery_date: Optional[str] = None
     lines: List[SalesOrderLineResponse]
     total_amount: Decimal
     created_at: datetime
@@ -104,6 +107,7 @@ class SalesOrderListResponse(BaseModel):
     reference: str
     customer_name: str
     status: str
+    expected_delivery_date: Optional[str] = None
     total_amount: Decimal
     created_at: datetime
 

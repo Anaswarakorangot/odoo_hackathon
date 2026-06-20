@@ -32,6 +32,7 @@ class PurchaseOrderCreateRequest(BaseModel):
     """Request to create a new purchase order."""
     vendor_id: UUID
     responsible_person_id: Optional[UUID] = None
+    expected_delivery_date: Optional[str] = None  # ISO date string YYYY-MM-DD
     line_items: List[PurchaseOrderLineCreate] = Field(min_length=1)
 
 
@@ -40,6 +41,7 @@ class PurchaseOrderUpdateRequest(BaseModel):
     vendor_id: Optional[UUID] = None
     vendor_address: Optional[str] = None
     responsible_person_id: Optional[UUID] = None
+    expected_delivery_date: Optional[str] = None  # ISO date string YYYY-MM-DD
     lines: Optional[List[PurchaseOrderLineUpdate]] = None
 
 
@@ -89,6 +91,7 @@ class PurchaseOrderResponse(BaseModel):
     vendor_address: Optional[str] = None
     responsible_person: Optional[UserBrief] = None
     status: str
+    expected_delivery_date: Optional[str] = None
     auto_created: bool
     source_sales_order_id: Optional[UUID] = None
     source_sales_order_ref: Optional[str] = None
@@ -107,6 +110,7 @@ class PurchaseOrderListResponse(BaseModel):
     reference: str
     vendor_name: str
     status: str
+    expected_delivery_date: Optional[str] = None
     auto_created: bool
     total_amount: Decimal
     created_at: datetime

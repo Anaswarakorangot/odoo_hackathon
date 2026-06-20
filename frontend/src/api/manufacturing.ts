@@ -11,18 +11,13 @@ import type {
   ManufacturingOrderUpdateRequest,
 } from '../types/manufacturing';
 
-// -----------------------------
-// Manufacturing Orders
-// -----------------------------
-
 export const manufacturingOrdersApi = {
   list: async (search?: string, statusFilter?: string): Promise<ManufacturingOrderListItem[]> => {
     const params = new URLSearchParams();
     if (search) params.append('search', search);
     if (statusFilter) params.append('status_filter', statusFilter);
-    const response = await apiClient.get<ManufacturingOrderListItem[]>(
-      `/manufacturing-orders/${params.toString() ? '?' + params.toString() : ''}`
-    );
+    const q = params.toString();
+    const response = await apiClient.get<ManufacturingOrderListItem[]>(`/manufacturing-orders/${q ? '?' + q : ''}`);
     return response.data;
   },
 
@@ -66,18 +61,12 @@ export const manufacturingOrdersApi = {
   },
 };
 
-// -----------------------------
-// BoMs
-// -----------------------------
-
 export const bomsApi = {
-  // GET /boms - brief list for dropdowns
   listBrief: async (): Promise<BomOption[]> => {
     const response = await apiClient.get<BomOption[]>('/boms');
     return response.data;
   },
 
-  // GET /boms/list - detailed list for the BoM list page
   list: async (productId?: string): Promise<BomListItem[]> => {
     const params = productId ? `?product_id=${productId}` : '';
     const response = await apiClient.get<BomListItem[]>(`/boms/list${params}`);
@@ -101,5 +90,12 @@ export const bomsApi = {
 
   delete: async (id: string): Promise<void> => {
     await apiClient.delete(`/boms/${id}`);
+  },
+};
+
+export const productsForMoApi = {
+  list: async (): Promise<{ id: string; name: string; product_type: string }[]> => {
+    const response = await apiClient.get('/products/');
+    return response.data;
   },
 };
