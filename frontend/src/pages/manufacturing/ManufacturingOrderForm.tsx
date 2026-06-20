@@ -115,17 +115,46 @@ export default function ManufacturingOrderForm() {
     }
   };
 
-  const handleBomChange = (selectedBomId: string) => {
+  const handleBomChange = async (selectedBomId: string) => {
     setBomId(selectedBomId);
     if (!selectedBomId) return;
     const selectedBom = boms.find((bom) => bom.id === selectedBomId);
     if (selectedBom) setFinishedProductId(selectedBom.finished_product_id);
+
+    try {
+      const bomDetails = await bomsApi.get(selectedBomId);
+      setComponents(bomDetails.bom_lines.map((l) => ({
+        id: crypto.randomUUID(),
+        name: products.find(p => p.id === l.component_product_id)?.name || 'Unknown',
+        toConsume: Number(l.qty_per_unit) * quantity,
+        consumedQty: 0,
+        batchNumber: '',
+        freeToUseQty: undefined
+      })));
+      setWorkOrders(bomDetails.bom_operations.map((o) => ({
+        id: crypto.randomUUID(),
+        sequence: o.sequence,
+        operationName: o.operation_name,
+        workCenter: o.work_center,
+        expectedDuration: o.expected_duration_min,
+        realDuration: 0,
+        passFail: ''
+      })));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const status = order?.status || 'draft';
   const isDraft = status === 'draft';
   const isTerminal = status === 'done' || status === 'cancelled';
   const filteredBoms = finishedProductId ? boms.filter((bom) => bom.finished_product_id === finishedProductId) : boms;
+
+  const getFieldLockState = (status: string, fieldName: string) => {
+    if (status === 'done' || status === 'cancelled') return true;
+    if (status !== 'draft' && ['finished_product_id', 'bom_id', 'quantity', 'assignee_id', 'scheduled_date'].includes(fieldName)) return true;
+    return false;
+  };
 
   if (loading) {
     return <div className="flex justify-center py-12"><div className="h-8 w-8 animate-spin rounded-full border-2 border-violet-500 border-t-transparent" /></div>;
@@ -160,7 +189,7 @@ export default function ManufacturingOrderForm() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-400">Finished Product *</label>
-            <select value={finishedProductId} onChange={(e) => setFinishedProductId(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
+            <select value={finishedProductId} onChange={(e) => setFinishedProductId(e.target.value)} disabled={getFieldLockState(status, 'finished_product_id')} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
               <option value="">Select a product</option>
               {products.map((product) => <option key={product.id} value={product.id}>{product.name}</option>)}
             </select>
@@ -168,7 +197,7 @@ export default function ManufacturingOrderForm() {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-400">Bill of Materials</label>
-            <select value={bomId} onChange={(e) => handleBomChange(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
+            <select value={bomId} onChange={(e) => handleBomChange(e.target.value)} disabled={getFieldLockState(status, 'bom_id')} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
               <option value="">Select BoM...</option>
               {filteredBoms.map((bom) => <option key={bom.id} value={bom.id}>{bom.reference} ({bom.finished_product_name})</option>)}
             </select>
@@ -176,12 +205,18 @@ export default function ManufacturingOrderForm() {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-400">Quantity *</label>
-            <input type="number" min={1} value={quantity} onChange={(e) => setQuantity(Number(e.target.value) || 0)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50" />
+            <input type="number" min={1} value={quantity} onChange={(e) => {
+              const newQty = Number(e.target.value) || 0;
+              setQuantity(newQty);
+              if (isDraft && order === null && components.length > 0) {
+                 setComponents(current => current.map(c => ({...c, toConsume: (c.toConsume / quantity) * newQty})));
+              }
+            }} disabled={getFieldLockState(status, 'quantity')} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50" />
           </div>
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-400">Assignee</label>
-            <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
+            <select value={assigneeId} onChange={(e) => setAssigneeId(e.target.value)} disabled={getFieldLockState(status, 'assignee_id')} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50">
               <option value="">Select assignee...</option>
               {users.map((user) => <option key={user.id} value={user.id}>{user.name}</option>)}
             </select>
@@ -189,7 +224,7 @@ export default function ManufacturingOrderForm() {
 
           <div>
             <label className="mb-2 block text-sm font-medium text-slate-400">Scheduled Date</label>
-            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} disabled={!isDraft} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50" />
+            <input type="date" value={scheduledDate} onChange={(e) => setScheduledDate(e.target.value)} disabled={getFieldLockState(status, 'scheduled_date')} className="w-full rounded-xl border border-slate-700 bg-slate-800/50 px-4 py-2.5 text-slate-200 disabled:opacity-50" />
           </div>
         </div>
       </div>
@@ -209,7 +244,7 @@ export default function ManufacturingOrderForm() {
                     <th className="w-28 px-4 py-3 text-right text-sm font-medium text-slate-400">To Consume</th>
                     <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Consumed</th>
                     <th className="w-40 px-4 py-3 text-left text-sm font-medium text-slate-400">Batch #</th>
-                    <th className="w-28 px-4 py-3 text-right text-sm font-medium text-slate-400">Available</th>
+                    <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Availability</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,9 +262,15 @@ export default function ManufacturingOrderForm() {
                             <input type="number" min={0} step="any" value={component.consumedQty} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, consumedQty: Number(e.target.value) || 0 } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200" />
                           </td>
                           <td className="px-4 py-3">
-                            <input type="text" value={component.batchNumber} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, batchNumber: e.target.value } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200" />
+                            <input type="text" value={component.batchNumber} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, batchNumber: e.target.value } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 disabled:opacity-50" />
                           </td>
-                          <td className={`px-4 py-3 text-right ${shortage ? 'text-amber-400' : 'text-slate-400'}`}>{available ?? '—'}{shortage && <span className="ml-1">⚠️</span>}</td>
+                          <td className="px-4 py-3 text-right">
+                            {shortage ? (
+                              <span className="inline-block rounded-full bg-amber-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-amber-400 border border-amber-500/20">Shortage ({available ?? '?'})</span>
+                            ) : (
+                              <span className="inline-block rounded-full bg-emerald-500/10 px-2 py-1 text-[10px] font-medium uppercase tracking-wider text-emerald-400 border border-emerald-500/20">Available ({available ?? '?'})</span>
+                            )}
+                          </td>
                         </tr>
                       );
                     })
@@ -251,7 +292,7 @@ export default function ManufacturingOrderForm() {
                     <th className="px-4 py-3 text-left text-sm font-medium text-slate-400">Operation</th>
                     <th className="w-24 px-4 py-3 text-right text-sm font-medium text-slate-400">Seq</th>
                     <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Expected</th>
-                    <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Actual</th>
+                    {!isDraft && <th className="w-32 px-4 py-3 text-right text-sm font-medium text-slate-400">Actual</th>}
                     <th className="w-28 px-4 py-3 text-left text-sm font-medium text-slate-400">Pass/Fail</th>
                   </tr>
                 </thead>
@@ -264,11 +305,13 @@ export default function ManufacturingOrderForm() {
                         <td className="px-4 py-3 text-slate-200">{workOrder.operationName}</td>
                         <td className="px-4 py-3 text-right text-slate-400">{workOrder.sequence}</td>
                         <td className="px-4 py-3 text-right text-slate-400">{workOrder.expectedDuration}</td>
-                        <td className="px-4 py-3 text-right">
-                          <input type="number" min={0} step="any" value={workOrder.realDuration} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, realDuration: Number(e.target.value) || 0 } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200" />
-                        </td>
+                        {!isDraft && (
+                          <td className="px-4 py-3 text-right">
+                            <input type="number" min={0} step="any" value={workOrder.realDuration} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, realDuration: Number(e.target.value) || 0 } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200 disabled:opacity-50" />
+                          </td>
+                        )}
                         <td className="px-4 py-3">
-                          <input type="text" value={workOrder.passFail} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, passFail: e.target.value } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200" />
+                          <input type="text" value={workOrder.passFail} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, passFail: e.target.value } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 disabled:opacity-50" />
                         </td>
                       </tr>
                     ))
@@ -288,6 +331,7 @@ export default function ManufacturingOrderForm() {
         {status === 'confirmed' && <button onClick={() => doAction(() => manufacturingOrdersApi.start(order!.id))} className="rounded-xl bg-violet-600 px-4 py-2 text-white transition-colors hover:bg-violet-500">Start Production</button>}
         {status === 'in_progress' && <button onClick={() => doAction(() => manufacturingOrdersApi.produce(order!.id))} className="rounded-xl bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-500">Produce (Mark Done)</button>}
         {!isTerminal && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.cancel(order!.id))} className="rounded-xl bg-slate-800 px-4 py-2 text-slate-300 transition-colors hover:bg-slate-700">Cancel Order</button>}
+        {order && <button onClick={() => navigate(`/admin/audit?module=Manufacturing&record_id=${order.id}`)} className="rounded-xl bg-slate-800 border border-slate-700 px-5 py-2.5 font-medium text-white transition-colors hover:bg-slate-700">Logs</button>}
       </div>
     </div>
   );

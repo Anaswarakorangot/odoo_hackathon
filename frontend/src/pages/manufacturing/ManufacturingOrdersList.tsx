@@ -52,12 +52,20 @@ export default function ManufacturingOrdersList() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'No date';
     const date = new Date(dateStr);
-    const diffDays = Math.floor((Date.now() - date.getTime()) / 86400000);
+    date.setHours(0, 0, 0, 0);
+    const now = new Date();
+    now.setHours(0, 0, 0, 0);
+    const diffMs = date.getTime() - now.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
+
     if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays === -1) return 'Yesterday';
+    if (diffDays > 1 && diffDays < 7) return `In ${diffDays} days`;
+    if (diffDays < -1 && diffDays > -7) return `${Math.abs(diffDays)} days ago`;
     return date.toLocaleDateString();
   };
 
@@ -104,7 +112,7 @@ export default function ManufacturingOrdersList() {
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Product</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Qty</th>
                 <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Status</th>
-                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Created</th>
+                <th className="px-6 py-4 text-left text-sm font-medium text-slate-400">Scheduled</th>
                 <th className="px-6 py-4 text-right text-sm font-medium text-slate-400">Actions</th>
               </tr>
             </thead>
@@ -115,7 +123,7 @@ export default function ManufacturingOrdersList() {
                   <td className="px-6 py-4 text-slate-300">{order.finished_product_name}</td>
                   <td className="px-6 py-4 text-slate-300">{order.quantity}</td>
                   <td className="px-6 py-4"><span className={`rounded-full px-2.5 py-1 text-xs font-medium ${MO_STATUS_COLORS[order.status]}`}>{MO_STATUS_LABELS[order.status]}</span></td>
-                  <td className="px-6 py-4 text-slate-400">{formatDate(order.created_at)}</td>
+                  <td className="px-6 py-4 text-slate-400">{formatDate(order.scheduled_date)}</td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button onClick={(event) => handleCancel(event, order.id)} className="rounded-lg bg-slate-800 px-3 py-1.5 text-xs text-slate-300 hover:bg-slate-700 hover:text-white">Cancel</button>
@@ -148,7 +156,7 @@ export default function ManufacturingOrdersList() {
                       <span className="rounded-full px-2.5 py-1 text-xs font-medium text-slate-300">{order.quantity}</span>
                     </div>
                     <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
-                      <span>{formatDate(order.created_at)}</span>
+                      <span>{formatDate(order.scheduled_date)}</span>
                       <span className={`rounded-full px-2 py-1 ${MO_STATUS_COLORS[order.status]}`}>{MO_STATUS_LABELS[order.status]}</span>
                     </div>
                   </button>
