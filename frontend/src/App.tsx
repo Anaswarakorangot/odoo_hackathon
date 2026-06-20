@@ -1,7 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import AppShell from './components/layout/AppShell';
-import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgetPassword from './pages/auth/ForgetPassword';
@@ -39,8 +38,8 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          {/* Landing page */}
-          <Route path="/" element={<LandingPage />} />
+          {/* Root goes to auth entry to avoid the old marketing landing surface */}
+          <Route path="/" element={<Navigate to="/login" replace />} />
 
           {/* Public auth routes */}
           <Route path="/login" element={<Login />} />

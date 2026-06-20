@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from app.api.routes import audit_logs, auth, boms, customers, manufacturing_orders, products, purchase_orders, recall, sales_orders, users, vendors, dashboard, ai
 from app.db.database import engine, Base, SessionLocal
 from app.db.seed_permissions import seed_role_permissions
+from app.db.auto_migrate import reconcile_sqlite_schema
 
 # Import all models so they are registered with Base.metadata
 import app.models  # noqa: F401
@@ -14,7 +15,11 @@ import app.models  # noqa: F401
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Create all tables on startup
+    # Reconcile ORM-vs-DB drift first (adds any newly-introduced columns to
+    # existing tables). create_all() will then handle wholly new tables.
+    changes = reconcile_sqlite_schema(engine)
+    if changes:
+        print(f"[OK] Reconciled schema: {', '.join(changes)}")
     Base.metadata.create_all(bind=engine)
 
     # Seed role_permissions if table is empty (idempotent)
