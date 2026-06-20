@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import AppShell from './components/layout/AppShell';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgetPassword from './pages/auth/ForgetPassword';
@@ -24,6 +25,9 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
+          {/* Landing page */}
+          <Route path="/" element={<LandingPage />} />
+
           {/* Public auth routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/login/admin" element={<Login isAdminLogin />} />
@@ -54,9 +58,8 @@ function App() {
             <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
           </Route>
 
-          {/* Default redirect */}
-          <Route path="/" element={<Navigate to="/login" replace />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          {/* Catch all */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>
