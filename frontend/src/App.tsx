@@ -20,6 +20,7 @@ import AuditLogs from './pages/admin/AuditLogs';
 import UserManagement from './pages/admin/UserManagement';
 import RecallLookup from './pages/recall/RecallLookup';
 import Profile from './pages/auth/Profile';
+import AiInsights from './pages/ai/AiInsights';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -74,6 +75,7 @@ function App() {
             <Route path="/bom/:id" element={<BomForm />} />
             <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
             <Route path="/recall" element={<RecallLookup />} />
+            <Route path="/ai-insights" element={<AiInsights />} />
 
             {/* Profile and settings */}
             <Route path="/profile" element={<Profile />} />

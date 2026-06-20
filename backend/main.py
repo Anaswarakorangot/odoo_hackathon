@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import audit_logs, auth, boms, customers, manufacturing_orders, products, purchase_orders, recall, sales_orders, users, vendors, dashboard
+from app.api.routes import audit_logs, auth, boms, customers, manufacturing_orders, products, purchase_orders, recall, sales_orders, users, vendors, dashboard, ai
 from app.db.database import engine, Base, SessionLocal
 from app.db.seed_permissions import seed_role_permissions
 
@@ -76,6 +76,7 @@ app.include_router(manufacturing_orders.router, prefix="/api")
 app.include_router(audit_logs.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(recall.router, prefix="/api")
+app.include_router(ai.router, prefix="/api")
 
 
 @app.get("/")
