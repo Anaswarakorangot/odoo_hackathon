@@ -45,7 +45,7 @@ export default function Login({ isAdminLogin = false }: LoginPageProps) {
 
   return (
     <AuthPageShell
-      title={isAdminLogin ? 'Administrator Sign In' : 'DriveForge Motors'}
+      title={isAdminLogin ? 'Administrator Sign In' : 'NEOTORQUE'}
       subtitle={isAdminLogin ? 'Access the administration console' : 'System User Login'}
     >
       <form onSubmit={handleSubmit} className="space-y-5">

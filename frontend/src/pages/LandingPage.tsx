@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import BrandMark from '../components/brand/BrandMark';
 
 export default function LandingPage() {
   return (
@@ -16,8 +17,12 @@ export default function LandingPage() {
 
       <div className="relative z-10 flex min-h-screen flex-col items-center justify-center px-6 py-20 text-center">
         <div className="max-w-4xl">
-          <div className="inline-flex items-center justify-center rounded-full bg-slate-900/25 px-4 py-2 text-sm font-semibold tracking-wide text-emerald-300 ring-1 ring-emerald-400/20 mb-6">
-            DriveForge Motors ERP Preview
+          <div className="mb-6 inline-flex items-center justify-center rounded-full bg-slate-900/25 px-4 py-2 text-sm font-semibold tracking-wide text-emerald-300 ring-1 ring-emerald-400/20">
+            NEOTORQUE ERP Preview
+          </div>
+
+          <div className="mb-8 flex justify-center">
+            <BrandMark showTagline />
           </div>
 
           <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">

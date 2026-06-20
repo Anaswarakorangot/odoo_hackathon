@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import BrandMark from '../brand/BrandMark';
 
 interface NavItem {
   label: string;
@@ -34,14 +35,7 @@ export default function Sidebar() {
     <aside className="w-64 bg-slate-900 border-r border-slate-800 flex flex-col h-full">
       {/* Logo Area */}
       <div className="h-16 flex items-center px-6 border-b border-slate-800">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
-            <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <span className="text-lg font-bold text-white">DriveForge</span>
-        </div>
+        <BrandMark compact />
       </div>
 
       {/* Master Menu */}
@@ -75,7 +69,7 @@ export default function Sidebar() {
 
       {/* Version */}
       <div className="p-4 border-t border-slate-800">
-        <p className="text-xs text-slate-600 text-center">DriveForge ERP v1.0</p>
+        <p className="text-xs text-slate-600 text-center">NEOTORQUE ERP v1.0</p>
       </div>
     </aside>
   );

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import BrandMark from '../brand/BrandMark';
 
 export default function TopBar() {
   const { user, logout, isSystemAdmin } = useAuth();
@@ -37,9 +38,11 @@ export default function TopBar() {
     <header className="h-16 bg-slate-900 border-b border-slate-800 flex items-center justify-between px-6">
       {/* Left side - Page title area */}
       <div className="flex items-center gap-4">
-        <h1 className="text-lg font-semibold text-white">
-          {isSystemAdmin ? 'System Administrator' : 'DriveForge Motors ERP'}
-        </h1>
+        {isSystemAdmin ? (
+          <h1 className="text-lg font-semibold text-white">System Administrator</h1>
+        ) : (
+          <BrandMark compact />
+        )}
       </div>
 
       {/* Right side - User menu */}
