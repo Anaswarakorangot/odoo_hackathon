@@ -7,6 +7,7 @@ import Signup from './pages/auth/Signup';
 import ForgetPassword from './pages/auth/ForgetPassword';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import ProductsList from './pages/products/ProductsList';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -49,7 +50,7 @@ function App() {
             <Route path="/sales" element={<PlaceholderPage title="Sales Orders" />} />
             <Route path="/purchase" element={<PlaceholderPage title="Purchase Orders" />} />
             <Route path="/manufacturing" element={<PlaceholderPage title="Manufacturing Orders" />} />
-            <Route path="/products" element={<PlaceholderPage title="Products" />} />
+            <Route path="/products" element={<ProductsList />} />
             <Route path="/bom" element={<PlaceholderPage title="Bill of Materials" />} />
             <Route path="/inventory" element={<PlaceholderPage title="Inventory" />} />
 

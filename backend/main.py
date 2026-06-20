@@ -4,7 +4,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import auth, users
+from app.api.routes import auth, boms, products, users, vendors
 from app.db.database import engine, Base, SessionLocal
 from app.db.seed_permissions import seed_role_permissions
 
@@ -67,6 +67,9 @@ async def global_exception_handler(request: Request, exc: Exception):
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(users.router, prefix="/api")
+app.include_router(products.router, prefix="/api")
+app.include_router(vendors.router, prefix="/api")
+app.include_router(boms.router, prefix="/api")
 
 
 @app.get("/")
