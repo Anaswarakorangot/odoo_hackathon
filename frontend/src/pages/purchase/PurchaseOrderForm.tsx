@@ -15,8 +15,9 @@ interface LineItem {
   line_total: number;
 }
 
-function ReceiveModal({ lines, onClose, onSubmit }: { lines: LineItem[]; onClose: () => void; onSubmit: (data: { line_id: string; received_qty: number }[]) => void; }) {
+function ReceiveModal({ lines, onClose, onSubmit }: { lines: LineItem[]; onClose: () => void; onSubmit: (data: { line_id: string; received_qty: number; batch_number?: string }[]) => void; }) {
   const [qtys, setQtys] = useState<Record<string, number>>(Object.fromEntries(lines.map((line) => [line.id!, line.ordered_qty - line.received_qty])));
+  const [batches, setBatches] = useState<Record<string, string>>({});
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
@@ -24,16 +25,27 @@ function ReceiveModal({ lines, onClose, onSubmit }: { lines: LineItem[]; onClose
         <h3 className="mb-4 text-lg font-semibold text-white">Receive Items</h3>
         <div className="mb-6 space-y-3">
           {lines.map((line) => (
-            <div key={line.id} className="flex items-center gap-4">
-              <span className="flex-1 text-sm text-slate-300">{line.product_name}</span>
-              <span className="text-xs text-slate-500">Remaining: {line.ordered_qty - line.received_qty}</span>
-              <input type="number" min={0} max={line.ordered_qty - line.received_qty} value={qtys[line.id!] ?? 0} onChange={(e) => setQtys((current) => ({ ...current, [line.id!]: Number(e.target.value) }))} className="w-24 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+            <div key={line.id} className="flex items-center gap-3 bg-slate-800/50 p-3 rounded-xl border border-slate-700/50">
+              <div className="flex-1">
+                <p className="text-sm font-medium text-slate-200">{line.product_name}</p>
+                <p className="text-xs text-slate-500">Remaining: {line.ordered_qty - line.received_qty}</p>
+              </div>
+              <div className="flex gap-2">
+                <div>
+                  <label className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Batch #</label>
+                  <input type="text" placeholder="Optional" value={batches[line.id!] || ''} onChange={(e) => setBatches((current) => ({ ...current, [line.id!]: e.target.value }))} className="w-28 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-slate-500 uppercase tracking-wider mb-1">Qty</label>
+                  <input type="number" min={0} max={line.ordered_qty - line.received_qty} value={qtys[line.id!] ?? 0} onChange={(e) => setQtys((current) => ({ ...current, [line.id!]: Number(e.target.value) }))} className="w-20 rounded-lg border border-slate-700 bg-slate-800 px-3 py-1.5 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-cyan-500/50" />
+                </div>
+              </div>
             </div>
           ))}
         </div>
         <div className="flex justify-end gap-3">
           <button onClick={onClose} className="px-4 py-2 text-sm text-slate-400 hover:text-slate-200">Cancel</button>
-          <button onClick={() => onSubmit(lines.map((line) => ({ line_id: line.id!, received_qty: qtys[line.id!] ?? 0 })))} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500">Confirm Receipt</button>
+          <button onClick={() => onSubmit(lines.map((line) => ({ line_id: line.id!, received_qty: qtys[line.id!] ?? 0, batch_number: batches[line.id!] || undefined })))} className="rounded-xl bg-emerald-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-emerald-500">Confirm Receipt</button>
         </div>
       </div>
     </div>
@@ -141,7 +153,7 @@ export default function PurchaseOrderForm() {
     }
   };
 
-  const handleReceive = async (receiveLines: { line_id: string; received_qty: number }[]) => {
+  const handleReceive = async (receiveLines: { line_id: string; received_qty: number; batch_number?: string }[]) => {
     setShowReceiveModal(false);
     if (!order) return;
     await doAction(() => purchaseOrdersApi.receive(order.id, { lines: receiveLines }));
