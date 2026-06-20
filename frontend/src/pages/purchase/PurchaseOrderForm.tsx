@@ -170,9 +170,26 @@ export default function PurchaseOrderForm() {
         <button onClick={() => navigate('/purchase')} className="text-slate-400 transition-colors hover:text-white">← Back</button>
         <div>
           <h1 className="text-2xl font-bold text-white">{isNew ? 'New Purchase Order' : order?.reference}</h1>
-          {order && <span className={`mt-1 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${PO_STATUS_COLORS[order.status]}`}>{PO_STATUS_LABELS[order.status]}</span>}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {order && <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${PO_STATUS_COLORS[order.status]}`}>{PO_STATUS_LABELS[order.status]}</span>}
+            {order?.auto_created && (
+              <span className="inline-flex items-center rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 text-[10px] font-semibold tracking-[0.15em] text-cyan-300">
+                AUTO
+              </span>
+            )}
+          </div>
         </div>
       </div>
+
+      {order?.auto_created && (
+        <div className="rounded-xl border border-cyan-500/30 bg-cyan-500/5 p-4 text-sm text-cyan-200">
+          Auto-created from Sales Order{' '}
+          <span className="font-mono font-semibold text-cyan-300">
+            {order.source_sales_order_ref || order.source_sales_order_id?.slice(0, 8) || '—'}
+          </span>{' '}
+          when the SO was confirmed and on-hand stock was insufficient.
+        </div>
+      )}
 
       {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">{error}</div>}
       {actionError && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">{actionError}</div>}

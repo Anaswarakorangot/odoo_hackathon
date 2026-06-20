@@ -148,6 +148,13 @@ export default function ManufacturingOrderForm() {
   const status = order?.status || 'draft';
   const isDraft = status === 'draft';
   const isTerminal = status === 'done' || status === 'cancelled';
+
+  // Road-test gate: backend rejects Produce if any work order whose operation_name
+  // contains "road test" doesn't have pass_fail = "pass". Mirror that client-side
+  // so the button reflects gate state instead of always optimistically enabling.
+  const roadTests = workOrders.filter((wo) => wo.operationName.toLowerCase().includes('road test'));
+  const pendingRoadTests = roadTests.filter((wo) => wo.passFail !== 'pass');
+  const canProduce = status === 'in_progress' && pendingRoadTests.length === 0;
   const filteredBoms = finishedProductId ? boms.filter((bom) => bom.finished_product_id === finishedProductId) : boms;
 
   const getFieldLockState = (status: string, fieldName: string) => {
@@ -167,7 +174,17 @@ export default function ManufacturingOrderForm() {
           <button onClick={() => navigate('/manufacturing')} className="rounded-lg p-2 transition-colors hover:bg-slate-800"><span className="text-slate-400">←</span></button>
           <div>
             <h1 className="text-2xl font-bold text-white">{isNew ? 'New Manufacturing Order' : order?.reference}</h1>
-            {order && <span className={`mt-1.5 inline-block rounded-full px-2.5 py-1 text-xs font-medium ${MO_STATUS_COLORS[status]}`}>{MO_STATUS_LABELS[status]}</span>}
+            <div className="mt-1.5 flex flex-wrap items-center gap-2">
+              {order && <span className={`inline-block rounded-full px-2.5 py-1 text-xs font-medium ${MO_STATUS_COLORS[status]}`}>{MO_STATUS_LABELS[status]}</span>}
+              {order?.vin_number && (
+                <span
+                  title="Vehicle Identification Number — generated on Produce"
+                  className="inline-flex items-center gap-1 rounded-md border border-cyan-500/40 bg-cyan-500/10 px-2 py-0.5 font-mono text-[11px] font-semibold tracking-wider text-cyan-300"
+                >
+                  VIN · {order.vin_number}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
@@ -175,7 +192,20 @@ export default function ManufacturingOrderForm() {
           {!isTerminal && <button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white disabled:opacity-50">{saving ? 'Saving...' : 'Save Changes'}</button>}
           {isSystemAdmin && status === 'draft' && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.confirm(order!.id))} className="rounded-xl bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-500">Confirm</button>}
           {status === 'confirmed' && <button onClick={() => doAction(() => manufacturingOrdersApi.start(order!.id))} className="rounded-xl bg-violet-600 px-4 py-2 text-white transition-colors hover:bg-violet-500">Start Production</button>}
-          {status === 'in_progress' && <button onClick={() => doAction(() => manufacturingOrdersApi.produce(order!.id))} className="rounded-xl bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-500">Produce (Mark Done)</button>}
+          {status === 'in_progress' && (
+            <button
+              onClick={() => doAction(() => manufacturingOrdersApi.produce(order!.id))}
+              disabled={!canProduce}
+              title={
+                canProduce
+                  ? 'Mark production complete'
+                  : `Blocked: ${pendingRoadTests.length} road test(s) not yet passed`
+              }
+              className="rounded-xl bg-emerald-600 px-4 py-2 text-white transition-colors hover:bg-emerald-500 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              Produce (Mark Done)
+            </button>
+          )}
           {!isTerminal && !isNew && <button onClick={() => doAction(() => manufacturingOrdersApi.cancel(order!.id))} className="rounded-xl bg-slate-800 px-4 py-2 text-slate-300 transition-colors hover:bg-slate-700">Cancel Order</button>}
         </div>
       </div>
@@ -183,6 +213,28 @@ export default function ManufacturingOrderForm() {
       {order?.auto_created && order.source_sales_order_ref && <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-sm text-purple-300">🔗 Auto-created from Sales Order <strong>{order.source_sales_order_ref}</strong></div>}
       {error && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">⚠️ {error}</div>}
       {actionError && <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 text-sm text-red-400">⚠️ {actionError}</div>}
+
+      {status === 'in_progress' && roadTests.length > 0 && (
+        <div
+          className={`rounded-xl border p-4 text-sm ${
+            pendingRoadTests.length === 0
+              ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-200'
+              : 'border-amber-500/30 bg-amber-500/10 text-amber-200'
+          }`}
+        >
+          {pendingRoadTests.length === 0 ? (
+            <span>
+              ✓ All <strong>{roadTests.length}</strong> road test(s) passed — production can be marked complete.
+            </span>
+          ) : (
+            <span>
+              Production gated on road-test results.{' '}
+              <strong>{pendingRoadTests.length}</strong> of {roadTests.length} road test(s) still pending pass:{' '}
+              {pendingRoadTests.map((wo) => wo.operationName).join(', ')}.
+            </span>
+          )}
+        </div>
+      )}
 
       <div className="rounded-xl border border-slate-800 bg-slate-900 p-6 space-y-6">
         <h2 className="text-lg font-semibold text-white">Order Specification</h2>
@@ -298,23 +350,53 @@ export default function ManufacturingOrderForm() {
                 </thead>
                 <tbody>
                   {workOrders.length === 0 ? (
-                    <tr><td colSpan={5} className="px-4 py-8 text-center text-slate-500">No work orders loaded</td></tr>
+                    <tr><td colSpan={isDraft ? 4 : 5} className="px-4 py-8 text-center text-slate-500">No work orders loaded</td></tr>
                   ) : (
-                    workOrders.map((workOrder, index) => (
-                      <tr key={workOrder.id} className="border-t border-slate-800/50">
-                        <td className="px-4 py-3 text-slate-200">{workOrder.operationName}</td>
-                        <td className="px-4 py-3 text-right text-slate-400">{workOrder.sequence}</td>
-                        <td className="px-4 py-3 text-right text-slate-400">{workOrder.expectedDuration}</td>
-                        {!isDraft && (
-                          <td className="px-4 py-3 text-right">
-                            <input type="number" min={0} step="any" value={workOrder.realDuration} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, realDuration: Number(e.target.value) || 0 } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200 disabled:opacity-50" />
+                    workOrders.map((workOrder, index) => {
+                      const isRoadTest = workOrder.operationName.toLowerCase().includes('road test');
+                      const passToneClass =
+                        workOrder.passFail === 'pass'
+                          ? 'border-emerald-500/50 text-emerald-200'
+                          : workOrder.passFail === 'fail'
+                            ? 'border-rose-500/50 text-rose-200'
+                            : 'border-slate-700 text-slate-200';
+                      return (
+                        <tr key={workOrder.id} className="border-t border-slate-800/50">
+                          <td className="px-4 py-3 text-slate-200">
+                            <div className="flex items-center gap-2">
+                              <span>{workOrder.operationName}</span>
+                              {isRoadTest && (
+                                <span
+                                  title="Road Test — production cannot complete until pass_fail = pass"
+                                  className="inline-flex items-center rounded-md border border-amber-500/40 bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-semibold tracking-[0.15em] text-amber-300"
+                                >
+                                  ROAD TEST
+                                </span>
+                              )}
+                            </div>
                           </td>
-                        )}
-                        <td className="px-4 py-3">
-                          <input type="text" value={workOrder.passFail} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, passFail: e.target.value } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 disabled:opacity-50" />
-                        </td>
-                      </tr>
-                    ))
+                          <td className="px-4 py-3 text-right text-slate-400">{workOrder.sequence}</td>
+                          <td className="px-4 py-3 text-right text-slate-400">{workOrder.expectedDuration}</td>
+                          {!isDraft && (
+                            <td className="px-4 py-3 text-right">
+                              <input type="number" min={0} step="any" value={workOrder.realDuration} onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, realDuration: Number(e.target.value) || 0 } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200 disabled:opacity-50" />
+                            </td>
+                          )}
+                          <td className="px-4 py-3">
+                            <select
+                              value={workOrder.passFail}
+                              onChange={(e) => setWorkOrders((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, passFail: e.target.value } : row)))}
+                              disabled={isTerminal}
+                              className={`w-full rounded-lg border bg-slate-800/50 px-3 py-2 disabled:opacity-50 ${passToneClass}`}
+                            >
+                              <option value="">—</option>
+                              <option value="pass">Pass</option>
+                              <option value="fail">Fail</option>
+                            </select>
+                          </td>
+                        </tr>
+                      );
+                    })
                   )}
                 </tbody>
               </table>
@@ -322,8 +404,6 @@ export default function ManufacturingOrderForm() {
           </div>
         </>
       )}
-
-      {order?.auto_created && order.source_sales_order_ref && <div className="rounded-xl border border-purple-500/30 bg-purple-500/10 p-3 text-sm text-purple-300">🔗 Auto-created from Sales Order <strong>{order.source_sales_order_ref}</strong></div>}
 
       <div className="flex flex-wrap gap-2">
         {!isTerminal && <button onClick={handleSave} disabled={saving} className="rounded-xl bg-gradient-to-r from-violet-500 to-purple-500 px-4 py-2 text-white disabled:opacity-50">{saving ? 'Saving...' : 'Save'}</button>}

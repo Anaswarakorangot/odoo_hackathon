@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import apiClient from '../../api/client';
 
 interface RecallResult {
@@ -24,6 +24,15 @@ export default function RecallLookup() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [response, setResponse] = useState<RecallLookupResponse | null>(null);
+  const [knownBatches, setKnownBatches] = useState<string[]>([]);
+
+  // Prefetch known batches once for the datalist autocomplete.
+  useEffect(() => {
+    apiClient
+      .get<string[]>('/recall/batches')
+      .then((r) => setKnownBatches(r.data))
+      .catch(() => {});
+  }, []);
 
   const handleSearch = async () => {
     if (!batchNumber.trim()) {
@@ -70,12 +79,18 @@ export default function RecallLookup() {
         <div className="flex gap-3">
           <input
             type="text"
+            list="known-batches"
             value={batchNumber}
             onChange={(e) => setBatchNumber(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="e.g., BF-2024-0042"
             className="flex-1 bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-3 text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50 text-lg"
           />
+          <datalist id="known-batches">
+            {knownBatches.map((b) => (
+              <option key={b} value={b} />
+            ))}
+          </datalist>
           <button
             onClick={handleSearch}
             disabled={loading}

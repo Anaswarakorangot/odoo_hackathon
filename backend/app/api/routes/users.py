@@ -10,7 +10,11 @@ from app.api.dependencies import (
     current_user_dependency,
     system_admin_dependency,
 )
+from pydantic import BaseModel
+
 from app.core.security import get_password_hash, validate_password
+from app.db.seed_permissions import ALL_MODULES, ALL_ACTIONS
+from app.models.permissions import RolePermission, UserPermissionOverride
 from app.models.user import User as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate
 
@@ -207,3 +211,151 @@ def delete_user(
     db.delete(user)
     db.commit()
     return None
+
+
+# ---------------------------------------------------------------------------
+# Per-user permission overrides
+# ---------------------------------------------------------------------------
+
+
+class PermissionEntry(BaseModel):
+    module: str
+    action: str
+    allowed: bool
+    source: str  # "role" | "override"
+
+
+class UserPermissionsResponse(BaseModel):
+    user_id: UUID
+    role: str | None
+    is_system_admin: bool
+    permissions: list[PermissionEntry]
+
+
+class PermissionUpdate(BaseModel):
+    module: str
+    action: str
+    allowed: bool | None = None  # None = clear override, fall back to role default
+
+
+class PermissionsUpdateRequest(BaseModel):
+    updates: list[PermissionUpdate]
+
+
+@router.get("/{user_id}/permissions", response_model=UserPermissionsResponse)
+def get_user_permissions(
+    user_id: UUID,
+    db: db_dependency,
+    admin: system_admin_dependency,
+):
+    """
+    Get the effective permission matrix for a user (admin-only).
+
+    For each (module, action) the response shows whether it's currently allowed
+    AND whether the value came from a per-user override or the role default.
+    System admins are returned with everything allowed and source='admin'.
+    """
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_system_admin:
+        # Admin bypasses all checks; return synthetic all-allowed grid for UI clarity.
+        perms = [
+            PermissionEntry(module=m, action=a, allowed=True, source="admin")
+            for m in ALL_MODULES for a in ALL_ACTIONS
+        ]
+        return UserPermissionsResponse(
+            user_id=user.id, role=None, is_system_admin=True, permissions=perms,
+        )
+
+    # Build role default lookup
+    role_rows = []
+    if user.role is not None:
+        role_rows = db.query(RolePermission).filter(RolePermission.role == user.role).all()
+    role_default = {(r.module, r.action): r.allowed for r in role_rows}
+
+    # Build override lookup
+    override_rows = db.query(UserPermissionOverride).filter(
+        UserPermissionOverride.user_id == user.id
+    ).all()
+    override_map = {(o.module, o.action): o.allowed for o in override_rows}
+
+    perms: list[PermissionEntry] = []
+    for module in ALL_MODULES:
+        for action in ALL_ACTIONS:
+            key = (module, action)
+            if key in override_map:
+                perms.append(PermissionEntry(
+                    module=module, action=action,
+                    allowed=override_map[key], source="override",
+                ))
+            else:
+                perms.append(PermissionEntry(
+                    module=module, action=action,
+                    allowed=role_default.get(key, False), source="role",
+                ))
+
+    return UserPermissionsResponse(
+        user_id=user.id,
+        role=user.role.value if user.role else None,
+        is_system_admin=False,
+        permissions=perms,
+    )
+
+
+@router.put("/{user_id}/permissions", response_model=UserPermissionsResponse)
+def update_user_permissions(
+    user_id: UUID,
+    request: PermissionsUpdateRequest,
+    db: db_dependency,
+    admin: system_admin_dependency,
+):
+    """
+    Update per-user permission overrides (admin-only).
+
+    For each update:
+      - allowed=true  -> upsert a grant override
+      - allowed=false -> upsert a denial override
+      - allowed=null  -> remove any existing override (fall back to role default)
+    """
+    user = db.query(UserModel).filter(UserModel.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    if user.is_system_admin:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="System admins bypass all permission checks; overrides are not applicable",
+        )
+
+    for upd in request.updates:
+        if upd.module not in ALL_MODULES:
+            raise HTTPException(status_code=400, detail=f"Unknown module: {upd.module}")
+        if upd.action not in ALL_ACTIONS:
+            raise HTTPException(status_code=400, detail=f"Unknown action: {upd.action}")
+
+        existing = db.query(UserPermissionOverride).filter(
+            UserPermissionOverride.user_id == user.id,
+            UserPermissionOverride.module == upd.module,
+            UserPermissionOverride.action == upd.action,
+        ).first()
+
+        if upd.allowed is None:
+            if existing:
+                db.delete(existing)
+        else:
+            if existing:
+                existing.allowed = upd.allowed
+            else:
+                db.add(UserPermissionOverride(
+                    user_id=user.id,
+                    module=upd.module,
+                    action=upd.action,
+                    allowed=upd.allowed,
+                ))
+
+    db.commit()
+
+    # Re-issue current view
+    return get_user_permissions(user_id, db, admin)

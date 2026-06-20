@@ -103,6 +103,7 @@ export interface ManufacturingOrder {
   auto_created: boolean;
   source_sales_order_id?: string;
   source_sales_order_ref?: string;
+  vin_number?: string | null;
   assignee?: UserBrief;
   scheduled_date?: string;
   components: MoComponent[];
@@ -120,6 +121,8 @@ export interface ManufacturingOrderListItem {
   status: MOStatus;
   auto_created: boolean;
   source_sales_order_id?: string;
+  vin_number?: string | null;
+  scheduled_date?: string | null;
   created_at: string;
 }
 

@@ -20,6 +20,7 @@ export interface AuditLogListResponse {
 export interface AuditLogFilters {
   module?: string;
   action?: string;
+  user_name?: string;
   date_from?: string;
   date_to?: string;
   page?: number;

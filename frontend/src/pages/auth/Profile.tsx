@@ -4,7 +4,7 @@ import { usersApi } from '../../api/users';
 import type { User } from '../../types/auth';
 
 export default function Profile() {
-  const { user, login } = useAuth(); // login won't update user in place if not calling it, but we can just reload window or update state
+  const { user } = useAuth();
   const [panelData, setPanelData] = useState<Partial<User>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');

@@ -9,7 +9,7 @@ from uuid import UUID
 from app.core.config import settings
 from app.db.database import SessionLocal
 from app.models.user import User, RoleEnum
-from app.models.permissions import RolePermission
+from app.models.permissions import RolePermission, UserPermissionOverride
 from app.schemas.token import TokenData
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/auth/token")
@@ -101,7 +101,21 @@ def require_permission(module: str, action: str) -> Callable:
         if current_user.is_system_admin:
             return current_user
 
-        # Non-admin users must have a role
+        # Per-user override (admin-set grant or denial) wins over role default.
+        override = db.query(UserPermissionOverride).filter(
+            UserPermissionOverride.user_id == current_user.id,
+            UserPermissionOverride.module == module,
+            UserPermissionOverride.action == action,
+        ).first()
+        if override is not None:
+            if override.allowed:
+                return current_user
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Access denied: {action} on {module} explicitly revoked for this user"
+            )
+
+        # Non-admin users must have a role for the role-default path
         if current_user.role is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

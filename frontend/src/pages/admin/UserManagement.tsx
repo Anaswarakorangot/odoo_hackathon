@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { usersApi } from '../../api/users';
 import type { User, RoleType } from '../../types/auth';
+import PermissionGrid from './PermissionGrid';
 
 const ROLES: { value: RoleType; label: string }[] = [
   { value: 'owner', label: 'Owner' },
@@ -289,6 +290,13 @@ export default function UserManagement() {
                       ))}
                     </select>
                   </div>
+                </div>
+
+                <div className="pt-4 border-t border-slate-800">
+                  <PermissionGrid
+                    userId={selectedUser.id}
+                    isSystemAdmin={selectedUser.is_system_admin}
+                  />
                 </div>
 
               </div>

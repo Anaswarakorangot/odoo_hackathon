@@ -37,6 +37,7 @@ export interface SalesOrderListItem {
   reference: string;
   customer_name: string;
   status: string;
+  expected_delivery_date?: string | null;
   total_amount: number;
   created_at: string;
 }
