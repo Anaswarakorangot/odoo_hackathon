@@ -58,6 +58,7 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view", "create", "edit"],
         "BoM": ["view"],
+        "Dashboard": ["view"],
     },
     # Purchase role: view/create/edit on Purchase; create/edit on Product (add raw components)
     RoleEnum.purchase: {
@@ -66,6 +67,7 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view", "create", "edit"],
         "BoM": ["view"],
+        "Dashboard": ["view"],
     },
     # Manufacturing role: production_entry on Manufacturing; create/edit on Product (add sub-assemblies)
     RoleEnum.manufacturing: {
@@ -74,6 +76,7 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view", "production_entry", "create", "edit"],
         "Product": ["view", "create", "edit"],
         "BoM": ["view"],
+        "Dashboard": ["view"],
     },
     # Inventory role: view all; create/edit on Product (manage stock items)
     RoleEnum.inventory: {
@@ -82,6 +85,7 @@ DEFAULT_PERMISSIONS = {
         "Manufacturing": ["view"],
         "Product": ["view", "create", "edit"],
         "BoM": ["view"],
+        "Dashboard": ["view"],
     },
     # Owner role: Business Owner / General Manager
     # Full create/edit access across all modules — they oversee all operations
