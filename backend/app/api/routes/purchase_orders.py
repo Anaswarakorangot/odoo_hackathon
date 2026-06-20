@@ -66,6 +66,7 @@ def build_line_response(line: PurchaseOrderLine) -> PurchaseOrderLineResponse:
         received_qty=line.received_qty,
         cost_price=line.cost_price,
         line_total=stock_service.get_purchase_order_line_total(line),
+        batch_number=getattr(line, 'batch_number', None),
     )
 
 
@@ -598,6 +599,10 @@ def receive_purchase_order(
 
         old_received = line.received_qty
         line.received_qty = new_received
+
+        # Set batch_number if provided (for recall traceability)
+        if receipt.batch_number is not None:
+            line.batch_number = receipt.batch_number
 
         # Audit the received qty change
         audit_service.log_change(

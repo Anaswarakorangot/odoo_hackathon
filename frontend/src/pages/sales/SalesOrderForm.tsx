@@ -234,9 +234,16 @@ export default function SalesOrderForm() {
 
   // Field lock logic based on status
   const status = order?.status || 'draft';
+
+  const getFieldLockState = (status: string, fieldName: string) => {
+    if (status === 'fully_delivered' || status === 'cancelled') return true;
+    if (status !== 'draft' && ['customer_id', 'lines'].includes(fieldName)) return true;
+    return false;
+  };
+
   const isReadonly = status === 'fully_delivered' || status === 'cancelled';
-  const isCustomerLocked = status !== 'draft';
-  const isLinesLocked = status !== 'draft';
+  const isCustomerLocked = getFieldLockState(status, 'customer_id');
+  const isLinesLocked = getFieldLockState(status, 'lines');
 
   if (loading) {
     return (
@@ -334,6 +341,14 @@ export default function SalesOrderForm() {
               className="px-4 py-2 bg-slate-700 text-white rounded-xl font-medium hover:bg-slate-600"
             >
               Close
+            </button>
+          )}
+          {order && (
+            <button
+              onClick={() => navigate(`/admin/audit?module=Sales&record_id=${order.id}`)}
+              className="px-4 py-2 bg-slate-800 text-white rounded-xl font-medium hover:bg-slate-700 border border-slate-700"
+            >
+              Logs
             </button>
           )}
         </div>

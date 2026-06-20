@@ -26,6 +26,7 @@ class PurchaseOrderLineReceive(BaseModel):
     """Line item for receive action."""
     line_id: UUID
     received_qty: Decimal = Field(ge=0)
+    batch_number: Optional[str] = None  # Optional for recall traceability
 
 
 class PurchaseOrderCreateRequest(BaseModel):
@@ -59,6 +60,7 @@ class PurchaseOrderLineResponse(BaseModel):
     received_qty: Decimal
     cost_price: Decimal
     line_total: Decimal
+    batch_number: Optional[str] = None
 
     class Config:
         from_attributes = True
