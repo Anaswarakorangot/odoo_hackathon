@@ -19,33 +19,29 @@ def seed_data():
     db = SessionLocal()
     print("Seeding NEOTORQUE Demo Data...")
 
-    # 0. Create Demo Users
-    admin_user = db.query(User).filter(User.login_id == "adminuser").first()
-    if not admin_user:
-        admin_user = User(
-            name="System Admin",
-            login_id="adminuser",
-            email="admin@neotorque.com",
-            password_hash=get_password_hash("Admin@123"),
-            is_system_admin=True,
-            role=RoleEnum.owner
-        )
-        db.add(admin_user)
+    # 0. Create Demo Users for the 4-person live demo
+    users_to_create = [
+        {"login": "adminuser", "name": "System Admin", "role": RoleEnum.owner, "admin": True, "pwd": "Admin@123"},
+        {"login": "salesuser", "name": "Sales Representative", "role": RoleEnum.sales, "admin": False, "pwd": "Sales@123"},
+        {"login": "mfguser", "name": "Manufacturing Lead", "role": RoleEnum.manufacturing, "admin": False, "pwd": "Mfg@123"},
+        {"login": "purchaseuser", "name": "Purchase Manager", "role": RoleEnum.purchase, "admin": False, "pwd": "Purchase@123"},
+    ]
 
-    sales_user = db.query(User).filter(User.login_id == "salesuser").first()
-    if not sales_user:
-        sales_user = User(
-            name="Demo Sales Rep",
-            login_id="salesuser",
-            email="sales@neotorque.com",
-            password_hash=get_password_hash("Sales@123"),
-            is_system_admin=False,
-            role=RoleEnum.sales
-        )
-        db.add(sales_user)
+    for u in users_to_create:
+        existing = db.query(User).filter(User.login_id == u["login"]).first()
+        if not existing:
+            new_user = User(
+                name=u["name"],
+                login_id=u["login"],
+                email=f"{u['login']}@neotorque.com",
+                password_hash=get_password_hash(u["pwd"]),
+                is_system_admin=u["admin"],
+                role=u["role"]
+            )
+            db.add(new_user)
 
     db.commit()
-    print("[OK] Demo Users created (adminuser / Admin@123) and (salesuser / Sales@123).")
+    print("[OK] Demo Users created: adminuser, salesuser, mfguser, purchaseuser.")
 
     # 1. Create Vendor and Customer
     vendor = db.query(Vendor).filter(Vendor.name == "Global Auto Parts Ltd").first()
