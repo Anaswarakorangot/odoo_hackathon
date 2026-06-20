@@ -5,8 +5,10 @@ import {
   getProductStock,
   listProducts,
 } from '../../api/products';
+import { useAuth } from '../../contexts/AuthContext';
 import type { Product, ProductStock, ProductType } from '../../types/product';
 import ProductsForm from './ProductsForm';
+
 
 interface StockDrawerState {
   product: Product;
@@ -51,11 +53,20 @@ export default function ProductsList() {
   const [deleteError, setDeleteError] = useState('');
   const [openMenuFor, setOpenMenuFor] = useState<string | null>(null);
 
+  const { user } = useAuth();
+  // Sales role: only ever sees finished vehicles — not raw parts or sub-assemblies
+  const isSalesRole = user?.role === 'sales';
+  const salesTypeFilter = isSalesRole ? 'finished_good' : undefined;
+
+  // Lock the tab to finished_good for sales so they can't switch
+  const effectiveTab = isSalesRole ? 'finished_good' : tab;
+
+
   const refresh = async () => {
     setLoading(true);
     setError('');
     try {
-      const data = await listProducts();
+      const data = await listProducts(salesTypeFilter);
       setProducts(data);
     } catch (err) {
       const axErr = err as AxiosError<{ detail: string }>;
@@ -70,11 +81,12 @@ export default function ProductsList() {
   }, []);
 
   const filtered = products.filter((p) => {
-    if (tab !== 'all' && p.product_type !== tab) return false;
+    if (effectiveTab !== 'all' && p.product_type !== effectiveTab) return false;
     if (search.trim() && !p.name.toLowerCase().includes(search.trim().toLowerCase()))
       return false;
     return true;
   });
+
 
   const openCreate = () => {
     setFormProduct(null);
@@ -139,12 +151,17 @@ export default function ProductsList() {
       {/* Header */}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-white tracking-tight">Products</h1>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">
+            {isSalesRole ? 'Vehicles Catalog' : 'Products'}
+          </h1>
           <p className="text-sm text-slate-500 mt-1">
-            Component catalog · on-hand and reserved figures update via stock movements
+            {isSalesRole
+              ? 'Finished vehicles available for sale — Sedan, SUV, Hatchback'
+              : 'Component catalog · on-hand and reserved figures update via stock movements'}
           </p>
         </div>
       </div>
+
 
       {/* Search + Action row */}
       <div className="flex flex-wrap gap-3 items-center">
@@ -159,9 +176,10 @@ export default function ProductsList() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Query database (engine, rotor, ...)"
+            placeholder={isSalesRole ? 'Search vehicles (Sedan, SUV, VoltZip...)' : 'Query database (engine, rotor, ...)'}
             className="w-full bg-slate-900/70 border border-slate-800 rounded-xl pl-11 pr-4 py-2.5 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
           />
+
         </div>
         <button
           onClick={refresh}
@@ -177,22 +195,25 @@ export default function ProductsList() {
         </button>
       </div>
 
-      {/* Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {tabs.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setTab(t.value)}
-            className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-[0.18em] uppercase transition-colors ${
-              tab === t.value
-                ? 'bg-cyan-500/15 border border-cyan-500/40 text-cyan-300'
-                : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200'
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
+      {/* Tabs — hidden for sales role since they only see finished vehicles */}
+      {!isSalesRole && (
+        <div className="flex flex-wrap gap-2">
+          {tabs.map((t) => (
+            <button
+              key={t.value}
+              onClick={() => setTab(t.value)}
+              className={`px-4 py-2 rounded-xl text-xs font-semibold tracking-[0.18em] uppercase transition-colors ${
+                tab === t.value
+                  ? 'bg-cyan-500/15 border border-cyan-500/40 text-cyan-300'
+                  : 'bg-slate-900/70 border border-slate-800 text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
 
       {error && (
         <div className="p-3 text-sm text-rose-300 bg-rose-500/10 border border-rose-500/30 rounded-xl">

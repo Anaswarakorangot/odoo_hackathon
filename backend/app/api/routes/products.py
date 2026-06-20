@@ -243,8 +243,17 @@ def create_product(
 def list_products(
     db: db_dependency,
     _: Annotated[User, Depends(require_permission("Product", "view"))],
+    type: str | None = None,  # e.g. ?type=finished_good
 ):
-    products = db.query(ProductModel).order_by(ProductModel.name).all()
+    q = db.query(ProductModel)
+    if type:
+        # Map query param string to enum value safely
+        try:
+            type_enum = ProductTypeEnum(type)
+            q = q.filter(ProductModel.product_type == type_enum)
+        except ValueError:
+            pass  # unknown type param — return all
+    products = q.order_by(ProductModel.name).all()
     return [_to_response(p) for p in products]
 
 

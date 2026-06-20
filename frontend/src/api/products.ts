@@ -8,10 +8,12 @@ import type {
   VendorOption,
 } from '../types/product';
 
-export async function listProducts(): Promise<Product[]> {
-  const r = await apiClient.get<Product[]>('/products');
+export async function listProducts(type?: string): Promise<Product[]> {
+  const params = type ? { type } : {};
+  const r = await apiClient.get<Product[]>('/products', { params });
   return r.data;
 }
+
 
 export async function getProduct(id: string): Promise<Product> {
   const r = await apiClient.get<Product>(`/products/${id}`);
