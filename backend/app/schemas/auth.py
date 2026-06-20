@@ -13,11 +13,18 @@ class SignupRequest(BaseModel):
     System Administrators can only be created by existing System Administrators
     via the admin-only user creation endpoint, never via public signup.
     """
-    name: str
+    name: Optional[str] = None
     login_id: str
     email: EmailStr
     password: str
     role: Optional[RoleEnum] = None
+
+
+class ResetPasswordRequest(BaseModel):
+    """Reset password request - verify login_id and email, then update password"""
+    login_id: str
+    email: EmailStr
+    password: str
 
 
 class LoginRequest(BaseModel):

@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import AppShell from './components/layout/AppShell';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
+import ForgetPassword from './pages/auth/ForgetPassword';
 import Dashboard from './pages/Dashboard';
 import AdminDashboard from './pages/AdminDashboard';
 
@@ -27,6 +28,7 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/login/admin" element={<Login isAdminLogin />} />
           <Route path="/signup" element={<Signup />} />
+          <Route path="/forget-password" element={<ForgetPassword />} />
 
           {/* Protected routes with app shell */}
           <Route element={<AppShell />}>

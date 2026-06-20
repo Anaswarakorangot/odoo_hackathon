@@ -116,29 +116,28 @@ export default function Login({ isAdminLogin = false }: LoginPageProps) {
           </form>
 
           {/* Footer links */}
-          <div className="mt-6 text-center text-sm">
-            {isAdminLogin ? (
-              <p className="text-slate-400">
-                Not an administrator?{' '}
-                <Link to="/login" className="text-blue-400 hover:text-blue-300">
-                  User Login
+          <div className="mt-6 space-y-4 text-center text-sm">
+            <div className="flex justify-center items-center gap-2 text-slate-400">
+              <Link to="/forget-password" className="text-blue-400 hover:text-blue-300 font-medium">
+                Forget Password ?
+              </Link>
+              <span className="text-slate-600">|</span>
+              <Link to="/signup" className="text-blue-400 hover:text-blue-300 font-medium">
+                Sign Up
+              </Link>
+            </div>
+            
+            <div className="border-t border-slate-800/80 pt-4">
+              {isAdminLogin ? (
+                <Link to="/login" className="text-blue-400 hover:text-blue-300 font-semibold text-base transition-colors">
+                  Login as User
                 </Link>
-              </p>
-            ) : (
-              <>
-                <p className="text-slate-400">
-                  Don't have an account?{' '}
-                  <Link to="/signup" className="text-blue-400 hover:text-blue-300">
-                    Sign up
-                  </Link>
-                </p>
-                <p className="text-slate-500 mt-2">
-                  <Link to="/login/admin" className="hover:text-slate-400">
-                    Administrator Login
-                  </Link>
-                </p>
-              </>
-            )}
+              ) : (
+                <Link to="/login/admin" className="text-blue-400 hover:text-blue-300 font-semibold text-base transition-colors">
+                  Login as System Administrator
+                </Link>
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -37,7 +37,7 @@ class User(Base):
 
     __table_args__ = (
         CheckConstraint(
-            "char_length(login_id) >= 6 AND char_length(login_id) <= 12",
+            "length(login_id) >= 6 AND length(login_id) <= 12",
             name="chk_login_id_length"
         ),
         CheckConstraint(

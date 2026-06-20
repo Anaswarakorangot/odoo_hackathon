@@ -10,7 +10,7 @@ from app.core.config import settings
 from app.core.security import verify_password, create_access_token, get_password_hash, validate_password
 from app.models.user import User
 from app.schemas.token import Token
-from app.schemas.auth import SignupRequest, LoginRequest, LoginResponse
+from app.schemas.auth import SignupRequest, LoginRequest, LoginResponse, ResetPasswordRequest
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
@@ -133,6 +133,38 @@ def signup(request: SignupRequest, db: db_dependency):
         user_id=str(new_user.id),
         name=new_user.name,
     )
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+def reset_password(request: ResetPasswordRequest, db: db_dependency):
+    """
+    Reset user password by verifying login_id and email.
+    Complexity rules for the new password are also verified here.
+    """
+    errors: List[FieldError] = []
+
+    # Find user by login_id
+    user = db.query(User).filter(User.login_id == request.login_id).first()
+    if not user:
+        errors.append(FieldError(field="login_id", message="Login ID not found"))
+    elif user.email != request.email:
+        errors.append(FieldError(field="email", message="Email address does not match this Login ID"))
+
+    # Validate new password complexity
+    password_valid, password_errors = validate_password(request.password)
+    if not password_valid:
+        for err in password_errors:
+            errors.append(FieldError(field="password", message=err))
+
+    # Raise error if validation failed
+    if errors:
+        raise create_multi_field_error(errors)
+
+    # Perform password update
+    user.password_hash = get_password_hash(request.password)
+    db.commit()
+
+    return {"message": "Password reset successful"}
 
 
 @router.post("/login", response_model=LoginResponse)
