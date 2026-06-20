@@ -53,15 +53,20 @@ export default function SalesOrdersList() {
     }
   };
 
-  const formatDate = (dateStr: string) => {
+  const formatDate = (dateStr: string | null | undefined) => {
+    if (!dateStr) return 'No date';
     const date = new Date(dateStr);
+    date.setHours(0, 0, 0, 0);
     const now = new Date();
-    const diffMs = now.getTime() - date.getTime();
-    const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+    now.setHours(0, 0, 0, 0);
+    const diffMs = date.getTime() - now.getTime();
+    const diffDays = Math.round(diffMs / (1000 * 60 * 60 * 24));
 
     if (diffDays === 0) return 'Today';
-    if (diffDays === 1) return 'Yesterday';
-    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays === 1) return 'Tomorrow';
+    if (diffDays === -1) return 'Yesterday';
+    if (diffDays > 1 && diffDays < 7) return `In ${diffDays} days`;
+    if (diffDays < -1 && diffDays > -7) return `${Math.abs(diffDays)} days ago`;
     return date.toLocaleDateString();
   };
 
@@ -195,7 +200,7 @@ export default function SalesOrdersList() {
                       {formatCurrency(order.total_amount)}
                     </td>
                     <td className="px-6 py-4 text-slate-400 text-sm">
-                      {formatDate(order.created_at)}
+                      {formatDate(order.expected_delivery_date)}
                     </td>
                     <td className="px-6 py-4 text-right">
                       <div className="flex justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -247,7 +252,7 @@ export default function SalesOrdersList() {
                     <div className="text-sm text-slate-400 mb-2">{order.customer_name}</div>
                     <div className="flex justify-between items-center">
                       <span className="text-cyan-400 font-medium">{formatCurrency(order.total_amount)}</span>
-                      <span className="text-xs text-slate-500">{formatDate(order.created_at)}</span>
+                      <span className="text-xs text-slate-500">{formatDate(order.expected_delivery_date)}</span>
                     </div>
                   </div>
                 ))}
