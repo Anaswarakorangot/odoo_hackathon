@@ -21,9 +21,9 @@ async def lifespan(app: FastAPI):
     try:
         seeded = seed_role_permissions(db)
         if seeded:
-            print("✓ Seeded default role_permissions")
+            print("[OK] Seeded default role_permissions")
         else:
-            print("✓ role_permissions already populated")
+            print("[OK] role_permissions already populated")
     finally:
         db.close()
 

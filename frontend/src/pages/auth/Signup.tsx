@@ -300,6 +300,7 @@ export default function Signup() {
                   errors.password ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
                 }`}
                 placeholder="Min 9 chars, upper, lower, special"
+                autoComplete="new-password"
               />
               {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
             </div>
@@ -319,6 +320,7 @@ export default function Signup() {
                   errors.confirmPassword ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
                 }`}
                 placeholder="Re-enter your password"
+                autoComplete="new-password"
               />
               {errors.confirmPassword && (
                 <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>
