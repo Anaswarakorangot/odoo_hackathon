@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { AxiosError } from 'axios';
 import type { RoleType, ValidationErrorResponse } from '../../types/auth';
+import AuthPageShell from '../../components/layout/AuthPageShell';
 
 interface FormErrors {
   name?: string;
@@ -179,180 +180,169 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-emerald-500 mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <h1 className="text-2xl font-bold text-white">Create Account</h1>
-          <p className="text-slate-400 mt-1">Join DriveForge Motors ERP</p>
-        </div>
+    <AuthPageShell title="Create Account" subtitle="Join DriveForge Motors ERP">
+      <div className="mx-auto w-full max-w-3xl rounded-[2rem] border border-white/10 bg-slate-950/80 p-8 shadow-2xl shadow-slate-950/50 backdrop-blur-xl">
+        <div className="relative overflow-hidden rounded-[1.75rem] border border-slate-800/70 bg-slate-900/80 p-8 shadow-inner shadow-slate-950/20">
+          <div className="absolute -right-10 top-6 h-32 w-32 rounded-full bg-cyan-500/15 blur-3xl" />
+          <div className="relative z-10">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {serverError && (
+                <div className="p-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-2xl text-center">
+                  {serverError}
+                </div>
+              )}
 
-        {/* Signup Form */}
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-8">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {serverError && (
-              <div className="p-3 text-sm text-red-400 bg-red-400/10 border border-red-400/20 rounded-lg text-center">
-                {serverError}
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label htmlFor="name" className="block text-sm font-medium text-slate-300">
+                    Full Name
+                  </label>
+                  <input
+                    id="name"
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    onBlur={(e) => validateField('name', e.target.value)}
+                    className={`w-full bg-slate-900/70 border border-slate-700/70 rounded-3xl px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition-all ${
+                      errors.name ? 'border-red-500' : 'border-slate-700/70'
+                    }`}
+                    placeholder="John Doe"
+                  />
+                  {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="loginId" className="block text-sm font-medium text-slate-300">
+                    Login ID
+                  </label>
+                  <input
+                    id="loginId"
+                    type="text"
+                    value={loginId}
+                    onChange={(e) => setLoginId(e.target.value)}
+                    onBlur={(e) => validateField('login_id', e.target.value)}
+                    className={`w-full bg-slate-900/70 border border-slate-700/70 rounded-3xl px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition-all ${
+                      errors.login_id ? 'border-red-500' : 'border-slate-700/70'
+                    }`}
+                    placeholder="6-12 characters"
+                    maxLength={12}
+                  />
+                  {errors.login_id && <p className="text-xs text-red-400 mt-1">{errors.login_id}</p>}
+                </div>
               </div>
-            )}
 
-            {/* Name */}
-            <div className="space-y-1.5">
-              <label htmlFor="name" className="block text-sm font-medium text-slate-400">
-                Full Name
-              </label>
-              <input
-                id="name"
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                onBlur={(e) => validateField('name', e.target.value)}
-                className={`w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                  errors.name ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
-                }`}
-                placeholder="John Doe"
-              />
-              {errors.name && <p className="text-xs text-red-400 mt-1">{errors.name}</p>}
-            </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label htmlFor="email" className="block text-sm font-medium text-slate-300">
+                    Email Address
+                  </label>
+                  <input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    onBlur={(e) => validateField('email', e.target.value)}
+                    className={`w-full bg-slate-900/70 border border-slate-700/70 rounded-3xl px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition-all ${
+                      errors.email ? 'border-red-500' : 'border-slate-700/70'
+                    }`}
+                    placeholder="john@example.com"
+                  />
+                  {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
+                </div>
 
-            {/* Login ID */}
-            <div className="space-y-1.5">
-              <label htmlFor="loginId" className="block text-sm font-medium text-slate-400">
-                Login ID
-              </label>
-              <input
-                id="loginId"
-                type="text"
-                value={loginId}
-                onChange={(e) => setLoginId(e.target.value)}
-                onBlur={(e) => validateField('login_id', e.target.value)}
-                className={`w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                  errors.login_id ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
-                }`}
-                placeholder="6-12 characters"
-                maxLength={12}
-              />
-              {errors.login_id && <p className="text-xs text-red-400 mt-1">{errors.login_id}</p>}
-            </div>
+                <div className="space-y-1.5">
+                  <label htmlFor="role" className="block text-sm font-medium text-slate-300">
+                    Department / Role
+                  </label>
+                  <select
+                    id="role"
+                    value={role}
+                    onChange={(e) => {
+                      setRole(e.target.value as RoleType);
+                      validateField('role', e.target.value);
+                    }}
+                    className={`w-full bg-slate-900/70 border border-slate-700/70 rounded-3xl px-4 py-3 text-slate-100 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition-all ${
+                      errors.role ? 'border-red-500' : 'border-slate-700/70'
+                    }`}
+                  >
+                    <option value="">Select your role</option>
+                    {ROLES.map((r) => (
+                      <option key={r.value} value={r.value}>
+                        {r.label}
+                      </option>
+                    ))}
+                  </select>
+                  {errors.role && <p className="text-xs text-red-400 mt-1">{errors.role}</p>}
+                </div>
+              </div>
 
-            {/* Email */}
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="block text-sm font-medium text-slate-400">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                onBlur={(e) => validateField('email', e.target.value)}
-                className={`w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                  errors.email ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
-                }`}
-                placeholder="john@example.com"
-              />
-              {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
-            </div>
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-1.5">
+                  <label htmlFor="password" className="block text-sm font-medium text-slate-300">
+                    Password
+                  </label>
+                  <input
+                    id="password"
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    onBlur={(e) => validateField('password', e.target.value)}
+                    className={`w-full bg-slate-900/70 border border-slate-700/70 rounded-3xl px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition-all ${
+                      errors.password ? 'border-red-500' : 'border-slate-700/70'
+                    }`}
+                    placeholder="Min 9 chars, upper, lower, special"
+                    autoComplete="new-password"
+                  />
+                  {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
+                </div>
 
-            {/* Role */}
-            <div className="space-y-1.5">
-              <label htmlFor="role" className="block text-sm font-medium text-slate-400">
-                Department / Role
-              </label>
-              <select
-                id="role"
-                value={role}
-                onChange={(e) => {
-                  setRole(e.target.value as RoleType);
-                  validateField('role', e.target.value);
-                }}
-                className={`w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                  errors.role ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
-                }`}
+                <div className="space-y-1.5">
+                  <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-300">
+                    Confirm Password
+                  </label>
+                  <input
+                    id="confirmPassword"
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    onBlur={(e) => validateField('confirmPassword', e.target.value)}
+                    className={`w-full bg-slate-900/70 border border-slate-700/70 rounded-3xl px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400/40 focus:border-cyan-400 transition-all ${
+                      errors.confirmPassword ? 'border-red-500' : 'border-slate-700/70'
+                    }`}
+                    placeholder="Re-enter your password"
+                    autoComplete="new-password"
+                  />
+                  {errors.confirmPassword && <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>}
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full rounded-3xl bg-gradient-to-r from-cyan-500 to-blue-500 px-5 py-3 text-base font-semibold text-white shadow-xl shadow-cyan-500/20 transition hover:-translate-y-0.5 hover:shadow-cyan-500/30 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <option value="">Select your role</option>
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
-              {errors.role && <p className="text-xs text-red-400 mt-1">{errors.role}</p>}
+                {isSubmitting ? (
+                  <span className="flex items-center justify-center gap-3">
+                    <div className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                    Creating account...
+                  </span>
+                ) : (
+                  'Create Account'
+                )}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center text-sm text-slate-400">
+              <p>
+                Already have an account?{' '}
+                <Link to="/login" className="text-cyan-300 hover:text-cyan-200">
+                  Sign in
+                </Link>
+              </p>
             </div>
-
-            {/* Password */}
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-sm font-medium text-slate-400">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                onBlur={(e) => validateField('password', e.target.value)}
-                className={`w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                  errors.password ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
-                }`}
-                placeholder="Min 9 chars, upper, lower, special"
-                autoComplete="new-password"
-              />
-              {errors.password && <p className="text-xs text-red-400 mt-1">{errors.password}</p>}
-            </div>
-
-            {/* Confirm Password */}
-            <div className="space-y-1.5">
-              <label htmlFor="confirmPassword" className="block text-sm font-medium text-slate-400">
-                Confirm Password
-              </label>
-              <input
-                id="confirmPassword"
-                type="password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                onBlur={(e) => validateField('confirmPassword', e.target.value)}
-                className={`w-full bg-slate-800/50 border rounded-xl px-4 py-3 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 transition-all ${
-                  errors.confirmPassword ? 'border-red-500' : 'border-slate-700 focus:border-blue-500'
-                }`}
-                placeholder="Re-enter your password"
-                autoComplete="new-password"
-              />
-              {errors.confirmPassword && (
-                <p className="text-xs text-red-400 mt-1">{errors.confirmPassword}</p>
-              )}
-            </div>
-
-            <button
-              type="submit"
-              disabled={isSubmitting}
-              className="w-full py-3 px-4 rounded-xl font-medium text-white bg-gradient-to-r from-blue-500 to-indigo-500 hover:from-blue-400 hover:to-indigo-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300 shadow-lg shadow-blue-500/25 active:scale-[0.98] mt-2"
-            >
-              {isSubmitting ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  Creating account...
-                </span>
-              ) : (
-                'Create Account'
-              )}
-            </button>
-          </form>
-
-          <div className="mt-6 text-center text-sm">
-            <p className="text-slate-400">
-              Already have an account?{' '}
-              <Link to="/login" className="text-blue-400 hover:text-blue-300">
-                Sign in
-              </Link>
-            </p>
           </div>
         </div>
       </div>
-    </div>
+    </AuthPageShell>
   );
 }
