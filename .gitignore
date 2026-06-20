@@ -1,6 +1,42 @@
-# Python cache
-backend/__pycache__/
-backend/*.py[cod]
+# Virtual environment
+backend/venv/
+venv/
+ENV/
+env/
 
-# Backend runtime logs
-backend/*.log
+# Python cache and temporary files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local configuration and environment variables
+backend/.env
+.env
+.env.local
+.env.*.local
+
+# Databases
+backend/test.db
+*.db
+*.sqlite3
+
+# Frontend dependencies and builds
+node_modules/
+frontend/node_modules/
+frontend/dist/
+dist/
+
+# Editor/OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
