@@ -15,7 +15,8 @@
       "Bash(curl -sS http://localhost:8000/)",
       "Bash(curl -sS http://localhost:8000/docs)",
       "Bash(curl -sS http://localhost:8000/openapi.json)",
-      "Bash(python -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\('Title:', d.get\\('info',{}\\).get\\('title'\\)\\); print\\('Paths:', list\\(d.get\\('paths',{}\\).keys\\(\\)\\)[:10]\\)\")"
+      "Bash(python -c \"import sys, json; d=json.load\\(sys.stdin\\); print\\('Title:', d.get\\('info',{}\\).get\\('title'\\)\\); print\\('Paths:', list\\(d.get\\('paths',{}\\).keys\\(\\)\\)[:10]\\)\")",
+      "Bash(git pull origin main)"
     ]
   }
 }
