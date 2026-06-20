@@ -12,10 +12,40 @@ from app.models.bom import BOM, BomLine, BomOperation
 from app.models.manufacturing import ManufacturingOrder, MoComponent, WorkOrder
 from app.models.sales import SalesOrder, SalesOrderLine
 from app.models.purchase import PurchaseOrder, PurchaseOrderLine
+from app.models.user import User, RoleEnum
+from app.core.security import get_password_hash
 
 def seed_data():
     db = SessionLocal()
     print("Seeding NEOTORQUE Demo Data...")
+
+    # 0. Create Demo Users
+    admin_user = db.query(User).filter(User.login_id == "adminuser").first()
+    if not admin_user:
+        admin_user = User(
+            name="System Admin",
+            login_id="adminuser",
+            email="admin@neotorque.com",
+            password_hash=get_password_hash("Admin@123"),
+            is_system_admin=True,
+            role=RoleEnum.owner
+        )
+        db.add(admin_user)
+
+    sales_user = db.query(User).filter(User.login_id == "salesuser").first()
+    if not sales_user:
+        sales_user = User(
+            name="Demo Sales Rep",
+            login_id="salesuser",
+            email="sales@neotorque.com",
+            password_hash=get_password_hash("Sales@123"),
+            is_system_admin=False,
+            role=RoleEnum.sales
+        )
+        db.add(sales_user)
+
+    db.commit()
+    print("[OK] Demo Users created (adminuser / Admin@123) and (salesuser / Sales@123).")
 
     # 1. Create Vendor and Customer
     vendor = db.query(Vendor).filter(Vendor.name == "Global Auto Parts Ltd").first()
