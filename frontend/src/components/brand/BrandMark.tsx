@@ -9,8 +9,8 @@ export default function BrandMark({ compact = false, showTagline = false, classN
     <div className={`flex items-center gap-3 ${className}`.trim()}>
       <img
         src="/logo_neoTorque.jpeg"
-        alt="NEOTORQUE"
-        className={compact ? 'h-10 w-10 rounded-xl bg-white object-contain' : 'h-12 w-12 rounded-xl bg-white object-contain'}
+        alt="NeoTorque"
+        className={compact ? 'h-10 w-auto object-contain' : 'h-12 w-auto object-contain'}
       />
       <div className="leading-none">
         <p
