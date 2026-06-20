@@ -1,0 +1,6 @@
+# Python cache
+backend/__pycache__/
+backend/*.py[cod]
+
+# Backend runtime logs
+backend/*.log
