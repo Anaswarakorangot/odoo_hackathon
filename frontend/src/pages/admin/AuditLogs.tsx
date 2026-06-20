@@ -13,6 +13,7 @@ export default function AuditLogs() {
 
   const [moduleFilter, setModuleFilter] = useState('');
   const [actionFilter, setActionFilter] = useState('');
+  const [userFilter, setUserFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [page, setPage] = useState(1);
@@ -28,6 +29,7 @@ export default function AuditLogs() {
       const data = await auditLogsApi.list({
         module: moduleFilter || undefined,
         action: actionFilter || undefined,
+        user_name: userFilter || undefined,
         date_from: dateFrom || undefined,
         date_to: dateTo || undefined,
         page,
@@ -63,6 +65,7 @@ export default function AuditLogs() {
   const resetFilters = () => {
     setModuleFilter('');
     setActionFilter('');
+    setUserFilter('');
     setDateFrom('');
     setDateTo('');
     setPage(1);
@@ -98,6 +101,26 @@ export default function AuditLogs() {
         </div>
       </div>
 
+      {/* Summary Cards */}
+      <div className="grid grid-cols-4 gap-4">
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase mb-1">Total Logs</p>
+          <p className="text-2xl font-bold text-white">{totalCount}</p>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase mb-1">Create Actions</p>
+          <p className="text-2xl font-bold text-emerald-400">{items.filter(i => i.action === 'created').length}</p>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase mb-1">Update Actions</p>
+          <p className="text-2xl font-bold text-blue-400">{items.filter(i => i.action === 'updated').length}</p>
+        </div>
+        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-4">
+          <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase mb-1">Delete Actions</p>
+          <p className="text-2xl font-bold text-rose-400">{items.filter(i => i.action === 'deleted').length}</p>
+        </div>
+      </div>
+
       {/* Filters */}
       <div className="bg-slate-900/70 border border-slate-800 rounded-2xl p-4">
         <div className="flex flex-wrap gap-3 items-end">
@@ -115,6 +138,19 @@ export default function AuditLogs() {
                 <option key={m} value={m}>{m}</option>
               ))}
             </select>
+          </div>
+
+          <div className="flex-1 min-w-[140px]">
+            <label className="block text-[10px] tracking-[0.2em] text-slate-500 uppercase mb-1.5">
+              User
+            </label>
+            <input
+              type="text"
+              placeholder="Search user..."
+              value={userFilter}
+              onChange={(e) => { setUserFilter(e.target.value); setPage(1); }}
+              className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-3 py-2 text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/50"
+            />
           </div>
 
           <div className="flex-1 min-w-[140px]">
@@ -185,12 +221,15 @@ export default function AuditLogs() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-slate-800 text-[10px] tracking-[0.2em] text-slate-500 uppercase">
-                <th className="text-left px-5 py-3 font-medium">When</th>
+                <th className="text-left px-5 py-3 font-medium">Date & Time</th>
                 <th className="text-left px-5 py-3 font-medium">User</th>
                 <th className="text-left px-5 py-3 font-medium">Module</th>
+                <th className="text-left px-5 py-3 font-medium">Record Type</th>
+                <th className="text-left px-5 py-3 font-medium">Record ID</th>
                 <th className="text-left px-5 py-3 font-medium">Action</th>
-                <th className="text-left px-5 py-3 font-medium">Record</th>
-                <th className="text-left px-5 py-3 font-medium">Change</th>
+                <th className="text-left px-5 py-3 font-medium">Field Changed</th>
+                <th className="text-left px-5 py-3 font-medium">Old Value</th>
+                <th className="text-left px-5 py-3 font-medium">New Value</th>
               </tr>
             </thead>
             <tbody>
@@ -211,18 +250,16 @@ export default function AuditLogs() {
                     </td>
                     <td className="px-5 py-3 text-slate-200">{item.user_name || '—'}</td>
                     <td className="px-5 py-3 text-slate-300">{item.module}</td>
+                    <td className="px-5 py-3 text-slate-400 font-mono text-xs">{item.record_type}</td>
+                    <td className="px-5 py-3 text-slate-600 font-mono text-xs">{item.record_id.slice(0, 8)}</td>
                     <td className="px-5 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs ${ACTION_COLORS[item.action] || 'bg-slate-500/20 text-slate-300'}`}>
                         {item.action.replace('_', ' ')}
                       </span>
                     </td>
-                    <td className="px-5 py-3 text-slate-400 font-mono text-xs">
-                      {item.record_type}
-                      <span className="text-slate-600 ml-1">
-                        ·{item.record_id.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td className="px-5 py-3 text-slate-300">{describeChange(item)}</td>
+                    <td className="px-5 py-3 text-slate-300">{item.field_changed || '—'}</td>
+                    <td className="px-5 py-3 text-slate-400">{item.old_value || '—'}</td>
+                    <td className="px-5 py-3 text-slate-200">{item.new_value || '—'}</td>
                   </tr>
                 ))
               )}

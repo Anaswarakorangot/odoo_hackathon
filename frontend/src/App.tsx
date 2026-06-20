@@ -19,6 +19,7 @@ import BomForm from './pages/bom/BomForm';
 import AuditLogs from './pages/admin/AuditLogs';
 import UserManagement from './pages/admin/UserManagement';
 import RecallLookup from './pages/recall/RecallLookup';
+import Profile from './pages/auth/Profile';
 
 // Placeholder pages for future implementation
 function PlaceholderPage({ title }: { title: string }) {
@@ -75,7 +76,7 @@ function App() {
             <Route path="/recall" element={<RecallLookup />} />
 
             {/* Profile and settings */}
-            <Route path="/profile" element={<PlaceholderPage title="My Profile" />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
           </Route>
 

@@ -7,7 +7,7 @@ export const usersApi = {
     return response.data;
   },
 
-  update: async (id: string, data: { role: RoleType | null }): Promise<User> => {
+  update: async (id: string, data: Partial<User>): Promise<User> => {
     const response = await apiClient.patch<User>(`/users/${id}`, data);
     return response.data;
   },
