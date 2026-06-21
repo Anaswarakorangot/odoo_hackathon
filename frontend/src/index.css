@@ -1,5 +1,25 @@
 @import "tailwindcss";
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Graphite palette — slightly warm neutral grey, replaces Tailwind's cool
+   blue-grey "slate" scale globally. Every existing slate-* class instantly
+   renders these tones, no per-file edits required.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+@theme {
+  --color-slate-50:  #f5f5f7;
+  --color-slate-100: #ebebef;
+  --color-slate-200: #d4d4dc;
+  --color-slate-300: #aeaeb8;
+  --color-slate-400: #82828d;
+  --color-slate-500: #585862;
+  --color-slate-600: #3e3e46;
+  --color-slate-700: #2d2d34;
+  --color-slate-800: #1e1e23;
+  --color-slate-900: #131316;
+  --color-slate-950: #0a0a0c;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -10,37 +30,32 @@ body,
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  background-color: #020617; /* slate-950 */
+  background-color: #0a0a0c;
 }
 
-/* Custom scrollbar for dark theme */
+/* Scrollbar tuned to graphite */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #0f172a; /* slate-900 */
+  background: #131316;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #334155; /* slate-700 */
+  background: #2d2d34;
   border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569; /* slate-600 */
+  background: #3e3e46;
 }
 
-/* Focus outline for accessibility */
 :focus-visible {
-  outline: 2px solid #3b82f6;
+  outline: 2px solid #22d3ee; /* cyan-400 — signature accent */
   outline-offset: 2px;
 }
 
-/* Select dropdown styling for dark theme */
 select {
-  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2382828d' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
   background-position: right 0.75rem center;
   background-repeat: no-repeat;
   background-size: 1.5em 1.5em;
@@ -51,6 +66,78 @@ select {
 }
 
 select option {
-  background-color: #1e293b;
-  color: #e2e8f0;
+  background-color: #1e1e23;
+  color: #ebebef;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Signature global textures — subtle but uniquely identifying.
+   Apply with className.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Faint horizontal scanline texture for HUD/instrument-cluster feel */
+.tex-scanlines {
+  position: relative;
+}
+.tex-scanlines::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.015) 0 1px,
+    transparent 1px 3px
+  );
+  border-radius: inherit;
+}
+
+/* Diagonal carbon-fibre style hatching for hero panels */
+.tex-carbon {
+  background-image:
+    repeating-linear-gradient(135deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 8px),
+    repeating-linear-gradient(45deg, rgba(255,255,255,0.015) 0 1px, transparent 1px 8px);
+}
+
+/* Engraved corner cut (clip-path) — used to give certain cards an "etched
+   precision-machined" feel. Apply via className `.clip-bevel`. */
+.clip-bevel {
+  clip-path: polygon(
+    14px 0,
+    100% 0,
+    100% calc(100% - 14px),
+    calc(100% - 14px) 100%,
+    0 100%,
+    0 14px
+  );
+}
+
+/* Top-right corner triangle accent — drops a small notched marker that signals
+   a "registered" / official panel. Applied to ::before. */
+.corner-notch {
+  position: relative;
+}
+.corner-notch::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(225deg, currentColor 50%, transparent 50%);
+  opacity: 0.18;
+}
+
+/* Glowing cyan ring used on focus / active gauges */
+.ring-signal {
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.4),
+    0 0 24px rgba(34, 211, 238, 0.15);
+}
+
+/* Numeric display font stack used for big readouts (gauges, time, IDs) */
+.font-display {
+  font-family: "Bahnschrift Condensed", "Arial Narrow", "Roboto Condensed",
+    "Segoe UI Variable", sans-serif;
+  letter-spacing: 0.02em;
 }

@@ -71,16 +71,22 @@ function Gauge({ label, sublabel, value, max, unit, color, glow, redlineFrom = 0
   const redStart = START + SWEEP * redlineFrom;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-5">
+    <div className="tex-scanlines relative overflow-hidden rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-5">
       {/* Top accent stripe */}
-      <div className={`absolute left-0 right-0 top-0 h-[2px] ${color.replace('text-', 'bg-')} opacity-70`} />
+      <div className={`absolute left-0 right-0 top-0 h-[2px] ${color.replace('text-', 'bg-')} opacity-80`} />
+      {/* Vertical hash marks on right edge — instrument trim */}
+      <div className="pointer-events-none absolute right-2 top-12 bottom-12 w-3 flex flex-col justify-between">
+        {Array.from({ length: 9 }).map((_, i) => (
+          <div key={i} className={`h-px ${i % 4 === 0 ? 'w-3 bg-slate-500' : 'w-1.5 bg-slate-700'}`} />
+        ))}
+      </div>
 
       <div className="mb-3 flex items-start justify-between">
         <div>
           <p className="text-[10px] font-semibold uppercase tracking-[0.25em] text-slate-500">{label}</p>
           <p className="text-[10px] uppercase tracking-[0.18em] text-slate-600 mt-0.5">{sublabel}</p>
         </div>
-        <span className={`text-[9px] tracking-[0.2em] uppercase ${color}`}>● Live</span>
+        <span className={`text-[9px] tracking-[0.2em] uppercase ${color} font-display`}>● Live</span>
       </div>
 
       <div className="relative">
@@ -135,15 +141,20 @@ function Gauge({ label, sublabel, value, max, unit, color, glow, redlineFrom = 0
 
         {/* Center readout */}
         <div className="absolute inset-x-0 top-[56%] -translate-y-1/2 flex flex-col items-center pointer-events-none">
-          <span
-            className={`text-4xl font-black tabular-nums leading-none ${color}`}
-            style={{ fontFamily: 'Bahnschrift Condensed, Arial Narrow, sans-serif', letterSpacing: '0.02em' }}
-          >
+          <span className={`font-display text-5xl font-black tabular-nums leading-none ${color}`}>
             {value.toLocaleString()}
           </span>
           {unit && (
-            <span className="mt-1 text-[9px] tracking-[0.25em] uppercase text-slate-500">{unit}</span>
+            <span className="mt-1 text-[9px] tracking-[0.3em] uppercase text-slate-500">{unit}</span>
           )}
+        </div>
+
+        {/* Below-gauge percentage micro-bar */}
+        <div className="mt-3 flex items-center gap-2">
+          <div className="flex-1 h-[3px] rounded-full bg-slate-800 overflow-hidden">
+            <div className={`h-full ${color.replace('text-', 'bg-')}`} style={{ width: `${ratio * 100}%` }} />
+          </div>
+          <span className={`font-display text-[10px] tabular-nums ${color}`}>{(ratio * 100).toFixed(0)}%</span>
         </div>
       </div>
     </div>
@@ -270,48 +281,45 @@ export default function Dashboard() {
       <RacingStripe />
 
       {/* ════════════ Command header ════════════ */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 via-slate-900 to-slate-950 px-6 py-5">
-        {/* Subtle diagonal stripe background */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(135deg, #fff 0 1px, transparent 1px 14px)',
-          }}
-        />
+      <div className="tex-scanlines relative overflow-hidden rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 px-6 py-5">
+        {/* Carbon-fibre hatching */}
+        <div className="tex-carbon pointer-events-none absolute inset-0 opacity-60" />
 
-        <div className="relative flex flex-wrap items-end justify-between gap-4">
+        {/* Sequential VIN-style hash strip down the left edge */}
+        <div className="pointer-events-none absolute left-0 top-0 bottom-0 w-1 bg-gradient-to-b from-cyan-400 via-cyan-500/40 to-transparent" />
+        <div className="pointer-events-none absolute left-3 top-3 font-mono text-[8px] tracking-[0.3em] text-slate-600 rotate-90 origin-top-left whitespace-nowrap">
+          NTQ · {(user?.login_id || 'GUEST').toUpperCase()} · OPS-DECK
+        </div>
+
+        <div className="relative flex flex-wrap items-end justify-between gap-4 pl-8">
           <div>
             <div className="flex items-center gap-3">
-              <span className="text-[10px] font-bold tracking-[0.4em] text-cyan-300 uppercase">
-                Fleet Command
+              <span className="font-display text-[10px] font-bold tracking-[0.45em] text-cyan-300 uppercase">
+                ◢ Fleet Command Deck
               </span>
               <span className="h-px flex-1 bg-gradient-to-r from-cyan-500/40 to-transparent" />
             </div>
-            <h1
-              className="mt-2 text-3xl font-black tracking-tight text-white"
-              style={{ fontFamily: 'Bahnschrift Condensed, Arial Narrow, Segoe UI, sans-serif' }}
-            >
+            <h1 className="font-display mt-2 text-4xl font-black tracking-tight text-white">
               WELCOME BACK, {user?.name?.toUpperCase()}
             </h1>
-            <p className="mt-1 text-sm text-slate-400">
+            <p className="mt-1 text-sm text-slate-400 flex items-center gap-2">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
               All systems armed · perimeter green · {activityAvailable ? 'telemetry online' : 'telemetry restricted'}
             </p>
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="rounded-lg border border-slate-700 bg-slate-950/60 px-4 py-2 text-right">
+          <div className="flex items-center gap-3">
+            <div className="corner-notch text-cyan-400 rounded-lg border border-slate-700 bg-slate-950/80 px-4 py-2.5 text-right">
               <p className="text-[9px] tracking-[0.3em] uppercase text-slate-500">Local Time</p>
-              <p
-                className="text-2xl font-black tabular-nums text-cyan-300"
-                style={{ fontFamily: 'Bahnschrift Condensed, Arial Narrow, sans-serif' }}
-              >
+              <p className="font-display text-2xl font-black tabular-nums text-cyan-300">
                 {timeStr}
               </p>
             </div>
-            <div className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2">
+            <div className="corner-notch text-emerald-400 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-4 py-2.5">
               <p className="text-[9px] tracking-[0.3em] uppercase text-emerald-300">Status</p>
-              <p className="text-xs font-semibold uppercase tracking-wider text-emerald-200">Armed</p>
+              <p className="font-display text-xs font-bold uppercase tracking-[0.2em] text-emerald-200">
+                ◉ Armed
+              </p>
             </div>
           </div>
         </div>
@@ -352,12 +360,12 @@ export default function Dashboard() {
       </div>
 
       {/* ════════════ Warning lights bar ════════════ */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/40 p-4">
+      <div className="relative overflow-hidden rounded-2xl border border-slate-700 bg-slate-900/50 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-            Indicator Cluster
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500">
+            ◢ Indicator Cluster
           </p>
-          <span className="text-[9px] tracking-[0.2em] uppercase text-slate-600">
+          <span className="text-[9px] tracking-[0.25em] uppercase text-slate-600">
             illuminated when active
           </span>
         </div>
@@ -410,23 +418,23 @@ export default function Dashboard() {
       </div>
 
       {/* ════════════ Telemetry trace ════════════ */}
-      <div className="relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-6">
+      <div className="tex-scanlines relative overflow-hidden rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6">
+        {/* Side rail indicator */}
+        <div className="absolute left-0 top-6 bottom-6 w-[2px] bg-gradient-to-b from-cyan-400 via-cyan-500/30 to-transparent" />
+
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-              Telemetry Trace
+            <p className="font-display text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500">
+              ◢ Telemetry Trace
             </p>
-            <p
-              className="mt-0.5 text-lg font-bold tracking-tight text-white"
-              style={{ fontFamily: 'Bahnschrift Condensed, Arial Narrow, sans-serif' }}
-            >
+            <p className="font-display mt-0.5 text-xl font-black tracking-tight text-white">
               ACTIVITY · LAST 24H
             </p>
           </div>
-          <div className="flex items-center gap-2 text-xs text-slate-400">
+          <div className="corner-notch text-cyan-400 rounded-lg border border-slate-700 bg-slate-950/70 px-3 py-1.5 flex items-center gap-2">
             <span className={`h-1.5 w-1.5 rounded-full ${activityAvailable ? 'bg-emerald-400 animate-pulse' : 'bg-rose-400'}`} />
-            <span className="uppercase tracking-[0.2em] text-[9px]">
-              {activityAvailable ? 'Signal locked' : 'Signal restricted'}
+            <span className="font-display uppercase tracking-[0.25em] text-[9px] text-slate-300">
+              {activityAvailable ? 'Signal Locked' : 'Signal Restricted'}
             </span>
           </div>
         </div>
@@ -485,7 +493,7 @@ export default function Dashboard() {
       {/* ════════════ Pilot Identity + Parts Inventory Bay ════════════ */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
         {/* Pilot identity (2/5 width) */}
-        <div className="lg:col-span-2 relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-6">
+        <div className="tex-scanlines lg:col-span-2 relative overflow-hidden rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6">
           {/* Diagonal stripe accent (top-right corner) */}
           <div
             className="pointer-events-none absolute -right-12 -top-12 h-32 w-32 opacity-30"
@@ -495,8 +503,8 @@ export default function Dashboard() {
             }}
           />
 
-          <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500 mb-4">
-            Pilot Identity
+          <p className="font-display text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500 mb-4">
+            ◢ Pilot Identity
           </p>
 
           <div className="flex items-center gap-4 mb-5">
@@ -528,16 +536,13 @@ export default function Dashboard() {
         </div>
 
         {/* Parts Inventory Bay (3/5 width) */}
-        <div className="lg:col-span-3 relative overflow-hidden rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900 to-slate-950 p-6">
+        <div className="tex-scanlines lg:col-span-3 relative overflow-hidden rounded-2xl border border-slate-700 bg-gradient-to-br from-slate-800 via-slate-900 to-slate-950 p-6">
           <div className="mb-4 flex items-center justify-between">
             <div>
-              <p className="text-[10px] font-semibold uppercase tracking-[0.3em] text-slate-500">
-                Parts Inventory Bay
+              <p className="font-display text-[10px] font-bold uppercase tracking-[0.35em] text-slate-500">
+                ◢ Parts Inventory Bay
               </p>
-              <p
-                className="mt-0.5 text-lg font-bold tracking-tight text-white"
-                style={{ fontFamily: 'Bahnschrift Condensed, Arial Narrow, sans-serif' }}
-              >
+              <p className="font-display mt-0.5 text-xl font-black tracking-tight text-white">
                 CRITICAL STOCK MONITOR
               </p>
             </div>
