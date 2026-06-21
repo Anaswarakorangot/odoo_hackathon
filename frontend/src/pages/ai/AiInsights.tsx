@@ -118,7 +118,7 @@ export default function AiInsights() {
   return (
     <div className="max-w-6xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Neotorque AI Insights</h1>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">NeoTorque AI Insights</h1>
         <p className="mt-2 text-slate-400">Intelligent forecasting, anomaly detection, and advanced visualizations.</p>
       </div>
 

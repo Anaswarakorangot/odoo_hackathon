@@ -4,6 +4,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { AxiosError } from 'axios';
 import type { RoleType, ValidationErrorResponse } from '../../types/auth';
 import AuthPageShell from '../../components/layout/AuthPageShell';
+import BrandMark from '../../components/brand/BrandMark';
 
 interface FormErrors {
   name?: string;
@@ -38,30 +39,30 @@ const ROLE_CARDS: RoleCard[] = [
   {
     value: 'sales',
     label: 'Sales Executive',
-    subtitle: 'Sales Department',
-    description: 'Create and manage customer orders for Sedan, SUV, and Hatchback models. Track deliveries for fleet customers like Zoom Car, Ola, and Meru Cabs.',
+    subtitle: 'Sales Module',
+    description: 'Build and confirm customer orders for finished vehicles. Track deliveries, reservations, and outstanding fulfilment.',
     icon: 'M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01',
-    accent: 'text-cyan-400',
+    accent: 'text-cyan-300',
     accentBg: 'bg-cyan-500/10 border-cyan-500/30',
     modules: ['Sales Orders', 'Customers', 'Products'],
   },
   {
     value: 'purchase',
     label: 'Procurement Officer',
-    subtitle: 'Purchase Department',
-    description: 'Source raw components from vendors like Bharat Forge, MRF Tyres, and Bosch India. Manage engine blocks, tyres, brake systems, and all raw assembly parts.',
+    subtitle: 'Purchase Module',
+    description: 'Issue and receive purchase orders against vendor partners. Manage raw component intake and batch traceability.',
     icon: 'M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z',
-    accent: 'text-orange-400',
-    accentBg: 'bg-orange-500/10 border-orange-500/30',
+    accent: 'text-amber-300',
+    accentBg: 'bg-amber-500/10 border-amber-500/30',
     modules: ['Purchase Orders', 'Vendors', 'Products'],
   },
   {
     value: 'manufacturing',
     label: 'Production Engineer',
-    subtitle: 'Manufacturing Department',
-    description: 'Oversee CityDrive X1 assembly — from chassis fabrication and engine sub-assembly to road testing and final QC sign-off. 18 work orders per car.',
+    subtitle: 'Manufacturing Module',
+    description: 'Drive production orders through confirm, start, and produce. Manage components, work centers, and road-test gates.',
     icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
-    accent: 'text-violet-400',
+    accent: 'text-violet-300',
     accentBg: 'bg-violet-500/10 border-violet-500/30',
     modules: ['Manufacturing Orders', 'Bill of Materials', 'Products'],
   },
@@ -69,23 +70,31 @@ const ROLE_CARDS: RoleCard[] = [
     value: 'inventory',
     label: 'Inventory Controller',
     subtitle: 'Warehouse & Stock',
-    description: 'Track on-hand stock of raw components — pistons, crankshafts, brake pads, wiring harnesses, tyres. Manage stock levels and batch numbers for recall management.',
+    description: 'Monitor on-hand, reserved, and free-to-use stock. Track batch numbers for recall lookups and ledger entries.',
     icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4',
-    accent: 'text-emerald-400',
+    accent: 'text-emerald-300',
     accentBg: 'bg-emerald-500/10 border-emerald-500/30',
-    modules: ['Inventory', 'Products', 'Stock Movements'],
+    modules: ['Inventory', 'Products', 'Stock Ledger'],
   },
   {
     value: 'owner',
     label: 'Business Owner',
     subtitle: 'Executive / Management',
-    description: 'Full visibility across all DriveForge operations — sales pipeline, production floor, procurement status, and inventory health. Access to the management dashboard.',
+    description: 'Full read access across every NeoTorque module. Live dashboard, audit history, and end-to-end operational visibility.',
     icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z',
-    accent: 'text-yellow-400',
-    accentBg: 'bg-yellow-500/10 border-yellow-500/30',
-    modules: ['All Modules', 'Dashboard', 'Reports'],
+    accent: 'text-rose-300',
+    accentBg: 'bg-rose-500/10 border-rose-500/30',
+    modules: ['All Modules', 'Dashboard', 'Audit Logs'],
   },
 ];
+
+const ACCENT_BAR: Record<RoleType, string> = {
+  sales: 'bg-cyan-400 shadow-cyan-500/30',
+  purchase: 'bg-amber-400 shadow-amber-500/30',
+  manufacturing: 'bg-violet-400 shadow-violet-500/30',
+  inventory: 'bg-emerald-400 shadow-emerald-500/30',
+  owner: 'bg-rose-400 shadow-rose-500/30',
+};
 
 export default function Signup() {
   const { signup } = useAuth();
@@ -189,58 +198,73 @@ export default function Signup() {
     return (
       <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center px-4 py-12">
         {/* Brand */}
-        <div className="mb-8 text-center">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-500 to-blue-600 flex items-center justify-center">
-              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <span className="text-white font-bold text-lg tracking-tight">DriveForge ERP</span>
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2">Join DriveForge Motors</h1>
-          <p className="text-slate-400">Select your department to get started with the right tools</p>
+        <div className="mb-10 flex flex-col items-center">
+          <BrandMark />
+          <p className="mt-6 text-[11px] font-semibold tracking-[0.32em] text-cyan-300 uppercase">
+            Operator Onboarding
+          </p>
+          <h1 className="mt-2 text-3xl font-semibold text-white tracking-tight text-center">
+            Provision your access
+          </h1>
+          <p className="mt-2 text-sm text-slate-400 text-center max-w-md">
+            Select an operator profile. Each role surfaces only the modules and actions it's cleared for.
+          </p>
         </div>
 
         {/* Role Cards Grid */}
-        <div className="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        <div className="w-full max-w-5xl grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
           {ROLE_CARDS.map((card) => (
             <button
               key={card.value}
               onClick={() => handleSelectRole(card)}
-              className={`text-left p-5 rounded-2xl border bg-slate-900 hover:bg-slate-800 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl group ${card.accentBg}`}
+              className="relative text-left rounded-2xl border border-slate-800 bg-slate-900/70 hover:border-slate-700 hover:bg-slate-900 transition-colors overflow-hidden"
             >
-              {/* Icon */}
-              <div className={`w-10 h-10 rounded-xl ${card.accentBg} flex items-center justify-center mb-4`}>
-                <svg className={`w-5 h-5 ${card.accent}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={card.icon} />
-                </svg>
-              </div>
+              {/* Top accent bar — mirrors the dashboard stat cards */}
+              <div className={`absolute top-0 left-0 right-0 h-[3px] shadow-lg ${ACCENT_BAR[card.value]}`} />
 
-              {/* Title */}
-              <div className="mb-1">
-                <h3 className="text-white font-semibold text-sm">{card.label}</h3>
-                <p className={`text-xs font-medium ${card.accent}`}>{card.subtitle}</p>
-              </div>
-
-              {/* Description */}
-              <p className="text-slate-400 text-xs leading-relaxed mb-4">{card.description}</p>
-
-              {/* Modules chips */}
-              <div className="flex flex-wrap gap-1.5">
-                {card.modules.map((m) => (
-                  <span key={m} className="px-2 py-0.5 rounded-full bg-slate-800 text-slate-400 text-xs group-hover:bg-slate-700">
-                    {m}
+              <div className="p-5">
+                {/* Header row */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className={`w-10 h-10 rounded-xl ${card.accentBg} border flex items-center justify-center`}>
+                    <svg className={`w-5 h-5 ${card.accent}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d={card.icon} />
+                    </svg>
+                  </div>
+                  <span className={`text-[10px] font-semibold tracking-[0.2em] uppercase ${card.accent}`}>
+                    {card.value === 'owner' ? 'Level 4' : 'Level 2'}
                   </span>
-                ))}
+                </div>
+
+                {/* Title */}
+                <h3 className="text-white font-semibold text-base tracking-tight">{card.label}</h3>
+                <p className="text-[10px] tracking-[0.2em] text-slate-500 uppercase mt-0.5">
+                  {card.subtitle}
+                </p>
+
+                {/* Description */}
+                <p className="text-slate-400 text-xs leading-relaxed mt-3">{card.description}</p>
+
+                {/* Modules chips */}
+                <div className="flex flex-wrap gap-1.5 mt-4 pt-4 border-t border-slate-800">
+                  {card.modules.map((m) => (
+                    <span
+                      key={m}
+                      className="px-2 py-0.5 rounded-md bg-slate-800/80 text-slate-400 text-[10px] tracking-wider"
+                    >
+                      {m}
+                    </span>
+                  ))}
+                </div>
               </div>
             </button>
           ))}
         </div>
 
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-slate-500">
           Already have an account?{' '}
-          <Link to="/login" className="text-cyan-300 hover:text-cyan-200">Sign in</Link>
+          <Link to="/login" className="text-cyan-300 hover:text-cyan-200 font-medium">
+            Sign in
+          </Link>
         </p>
       </div>
     );
@@ -254,7 +278,7 @@ export default function Signup() {
   return (
     <AuthPageShell
       title={`${selectedRole!.label} Account`}
-      subtitle={`${selectedRole!.subtitle} · DriveForge Motors`}
+      subtitle={`${selectedRole!.subtitle} · NeoTorque ERP`}
     >
       <form onSubmit={handleSubmit} className="space-y-5">
         {/* Role preview banner */}
@@ -325,7 +349,7 @@ export default function Signup() {
               onChange={(e) => setEmail(e.target.value)}
               onBlur={(e) => validateField('email', e.target.value)}
               className={`w-full bg-slate-950/80 border rounded-3xl px-4 py-3 text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 transition-all ${errors.email ? 'border-red-500' : 'border-slate-800/70'} ${accentRing} ${accentBorder}`}
-              placeholder={`yourname@driveforge.in`}
+              placeholder="yourname@neotorque.in"
             />
             {errors.email && <p className="text-xs text-red-400 mt-1">{errors.email}</p>}
           </div>
