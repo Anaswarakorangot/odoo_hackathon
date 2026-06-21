@@ -83,6 +83,16 @@ class UserBrief(BaseModel):
         from_attributes = True
 
 
+class RelatedOrderBrief(BaseModel):
+    id: UUID
+    reference: str
+    status: str
+    product_name: str
+    quantity: Decimal
+
+    class Config:
+        from_attributes = True
+
 class SalesOrderResponse(BaseModel):
     """Response for a sales order."""
     id: UUID
@@ -96,6 +106,8 @@ class SalesOrderResponse(BaseModel):
     total_amount: Decimal
     created_at: datetime
     created_by: Optional[UserBrief] = None
+    related_mos: List[RelatedOrderBrief] = []
+    related_pos: List[RelatedOrderBrief] = []
 
     class Config:
         from_attributes = True

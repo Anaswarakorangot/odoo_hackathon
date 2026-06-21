@@ -76,3 +76,5 @@ class User(Base):
         if not (6 <= len(value) <= 12):
             raise ValueError("login_id must be between 6 and 12 characters")
         return value
+
+from app.models.user_settings import UserSettings

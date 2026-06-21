@@ -146,7 +146,7 @@ def _create_purchase_order(
         vendor_id=product.vendor_id,
         vendor_address=vendor.address,
         responsible_person_id=current_user.id,
-        status=POStatusEnum.draft,
+        status=POStatusEnum.confirmed,
         auto_created=True,
         source_sales_order_id=sales_order_id,
         created_by=current_user.id,
@@ -208,7 +208,7 @@ def _create_manufacturing_order(
         bom_id=product.default_bom_id,
         quantity=shortage,
         assignee_id=current_user.id,
-        status=MOStatusEnum.draft,
+        status=MOStatusEnum.confirmed,
         auto_created=True,
         source_sales_order_id=sales_order_id,
         created_by=current_user.id,
@@ -255,8 +255,34 @@ def _create_manufacturing_order(
         action="created",
     )
 
+    # If confirmed, generate VIN for finished goods
+    from app.models.product import ProductTypeEnum
+    if product.product_type == ProductTypeEnum.finished_good:
+        from datetime import datetime
+        import random, string
+        from sqlalchemy import func
+        year = datetime.now().strftime("%y")
+        count = (
+            db.query(func.count(ManufacturingOrder.id))
+            .filter(ManufacturingOrder.vin_number.isnot(None))
+            .filter(ManufacturingOrder.vin_number.like(f"DFM{year}%"))
+            .scalar()
+        ) or 0
+        seq = count + 1
+        rnd = "".join(random.choices(string.ascii_uppercase + string.digits, k=6))
+        mo.vin_number = f"DFM{year}{seq:06d}{rnd}"
+        audit_service.log_change(
+            db, user_id=current_user.id, module="Manufacturing",
+            record_type="ManufacturingOrder", record_id=mo.id,
+            action="vin_assigned", field_changed="vin_number",
+            new_value=mo.vin_number,
+        )
+
+    # Automatically trigger cascade for this auto-confirmed MO
+    check_mo_component_shortages(db, mo, current_user)
+
     logger.info(
-        f"Auto-created MO {reference} for product '{product.name}' "
+        f"Auto-created and confirmed MO {reference} for product '{product.name}' "
         f"qty={shortage} from SO {sales_order_id}"
     )
 
@@ -383,7 +409,7 @@ def _create_child_manufacturing_order(
         bom_id=product.default_bom_id,
         quantity=shortage,
         assignee_id=current_user.id,
-        status=MOStatusEnum.draft,
+        status=MOStatusEnum.confirmed,
         auto_created=True,
         source_sales_order_id=parent_mo.source_sales_order_id,  # Inherit from parent
         parent_mo_id=parent_mo.id,
@@ -474,7 +500,7 @@ def _create_component_purchase_order(
         vendor_id=product.vendor_id,
         vendor_address=vendor.address,
         responsible_person_id=current_user.id,
-        status=POStatusEnum.draft,
+        status=POStatusEnum.confirmed,
         auto_created=True,
         source_sales_order_id=parent_mo.source_sales_order_id,  # Inherit from parent MO
         created_by=current_user.id,

@@ -515,6 +515,60 @@ export default function SalesOrderForm() {
         </div>
       </div>
 
+      {/* Related Orders */}
+      {order && ((order.related_mos && order.related_mos.length > 0) || (order.related_pos && order.related_pos.length > 0)) && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-6">
+          <h3 className="text-lg font-medium text-slate-200">Related Procurement Orders</h3>
+          <p className="text-sm text-slate-400">
+            These orders were automatically generated to fulfill stock shortages.
+          </p>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {order.related_mos && order.related_mos.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-slate-400 mb-3">Manufacturing Orders</h4>
+                <div className="space-y-2">
+                  {order.related_mos.map((mo) => (
+                    <div key={mo.id} className="flex flex-col p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-cyan-400 cursor-pointer hover:underline" onClick={() => navigate(`/manufacturing/${mo.id}`)}>{mo.reference}</span>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[mo.status] || 'bg-slate-500/20 text-slate-300'}`}>
+                          {STATUS_LABELS[mo.status] || mo.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-300 truncate pr-2">{mo.product_name}</span>
+                        <span className="text-slate-400 font-medium whitespace-nowrap">Qty: {mo.quantity}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {order.related_pos && order.related_pos.length > 0 && (
+              <div>
+                <h4 className="text-sm font-medium text-slate-400 mb-3">Purchase Orders</h4>
+                <div className="space-y-2">
+                  {order.related_pos.map((po) => (
+                    <div key={po.id} className="flex flex-col p-3 bg-slate-800/50 rounded-lg border border-slate-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-medium text-cyan-400 cursor-pointer hover:underline" onClick={() => navigate(`/purchase/${po.id}`)}>{po.reference}</span>
+                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${STATUS_COLORS[po.status] || 'bg-slate-500/20 text-slate-300'}`}>
+                          {STATUS_LABELS[po.status] || po.status}
+                        </span>
+                      </div>
+                      <div className="flex justify-between text-sm">
+                        <span className="text-slate-300 truncate pr-2">{po.product_name}</span>
+                        <span className="text-slate-400 font-medium whitespace-nowrap">Qty: {po.quantity}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Deliver Modal */}
       {showDeliverModal && order && (
         <DeliverModal

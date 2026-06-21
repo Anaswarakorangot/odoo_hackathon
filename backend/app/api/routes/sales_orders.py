@@ -100,6 +100,26 @@ def build_so_response(so: SalesOrder) -> SalesOrderResponse:
         created_by=UserBrief(id=so.created_by_user.id, name=so.created_by_user.name)
         if so.created_by_user
         else None,
+        related_mos=[
+            {
+                "id": mo.id, 
+                "reference": mo.reference, 
+                "status": mo.status.value,
+                "product_name": mo.finished_product.name if mo.finished_product else "Unknown",
+                "quantity": mo.quantity
+            }
+            for mo in getattr(so, "manufacturing_orders_sourced", [])
+        ],
+        related_pos=[
+            {
+                "id": po.id, 
+                "reference": po.reference, 
+                "status": po.status.value,
+                "product_name": po.lines[0].product.name if po.lines and len(po.lines) > 0 else "Unknown",
+                "quantity": po.lines[0].ordered_qty if po.lines and len(po.lines) > 0 else Decimal("0")
+            }
+            for po in getattr(so, "purchase_orders_sourced", [])
+        ],
     )
 
 
@@ -297,6 +317,8 @@ def get_sales_order(so_id: UUID, db: db_dependency):
             joinedload(SalesOrder.salesperson),
             joinedload(SalesOrder.created_by_user),
             joinedload(SalesOrder.lines).joinedload(SalesOrderLine.product),
+            joinedload(SalesOrder.manufacturing_orders_sourced),
+            joinedload(SalesOrder.purchase_orders_sourced),
         )
         .filter(SalesOrder.id == so_id)
         .first()
@@ -387,6 +409,8 @@ def confirm_sales_order(
             joinedload(SalesOrder.salesperson),
             joinedload(SalesOrder.created_by_user),
             joinedload(SalesOrder.lines).joinedload(SalesOrderLine.product),
+            joinedload(SalesOrder.manufacturing_orders_sourced),
+            joinedload(SalesOrder.purchase_orders_sourced),
         )
         .filter(SalesOrder.id == so_id)
         .first()

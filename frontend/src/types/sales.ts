@@ -19,6 +19,14 @@ export interface UserBrief {
   name: string;
 }
 
+export interface RelatedOrderBrief {
+  id: string;
+  reference: string;
+  status: string;
+  product_name: string;
+  quantity: number;
+}
+
 export interface SalesOrder {
   id: string;
   reference: string;
@@ -30,6 +38,8 @@ export interface SalesOrder {
   total_amount: number;
   created_at: string;
   created_by?: UserBrief;
+  related_mos?: RelatedOrderBrief[];
+  related_pos?: RelatedOrderBrief[];
 }
 
 export interface SalesOrderListItem {
