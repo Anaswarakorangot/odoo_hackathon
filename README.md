@@ -25,7 +25,7 @@
 
 ---
 
-## 🚗 What is NEOTORQUE?
+## What is NEOTORQUE?
 
 **NEOTORQUE** is a purpose-built, role-aware Mini ERP system designed for **custom automobile assembly manufacturers** — companies that build vehicles from raw components up, think Tata/Mahindra scale. It handles the entire operational lifecycle: sourcing raw components from vendors, assembling sub-units like engine assemblies and chassis frames, building finished vehicles, selling to fleet customers, and tracking every component batch for safety recall management.
 
@@ -33,9 +33,9 @@ The system was built end-to-end in **24 hours** as part of an Odoo Hackathon, co
 
 ---
 
-## ✨ Feature Highlights
+## Feature Highlights
 
-### 🏭 Core ERP Modules
+### Core ERP Modules
 
 | Module | What it does |
 |--------|-------------|
@@ -46,17 +46,17 @@ The system was built end-to-end in **24 hours** as part of an Odoo Hackathon, co
 | **Products** | Unified catalog for finished goods, sub-assemblies, and raw components. Role-specific form views per department |
 | **Inventory** | Live on-hand and free-to-use quantity tracking via a locked stock ledger service |
 
-### ⚙️ Smart Automation
+### Smart Automation
 
 - **Procurement Trigger** — When a Sales Order is confirmed and stock is short, NEOTORQUE automatically creates a Draft Purchase Order (for bought components) or a Draft Manufacturing Order (for manufactured sub-assemblies). No manual follow-up needed.
 - **Recursive MO Cascade** — If a sub-assembly's own components are short and procure-on-demand, NEOTORQUE creates child Manufacturing Orders linked to the parent, so nothing slips through.
 - **Row-locked Stock Service** — All stock movements go through a single `adjust_stock()` service with `SELECT ... FOR UPDATE`, preventing oversell race conditions when two orders confirm simultaneously.
 - **Terminal-only Stock Moves** — `on_hand_qty` only changes at fully terminal states (Fully Delivered, Fully Received, Done). Partial states never mutate stock — this is by design.
 
-### 🔍 Recall Management
+### Recall Management
 Flag a defective component batch and instantly see every Manufacturing Order that consumed it, which finished vehicles they produced, and which customers received those vehicles. Nobody else at the hackathon had this.
 
-### 🔐 Role-Based Access
+### Role-Based Access
 
 Five operational roles, each with a tailored UI:
 
@@ -69,12 +69,12 @@ Five operational roles, each with a tailored UI:
 | **Business Owner** | Full operational visibility, all modules | All 7 modules |
 | **System Admin** | User management, role permissions, audit logs | Admin panel only |
 
-### 📋 Audit Trail
+### Audit Trail
 Every status transition and field change is logged server-side with module, record, action, field name, old value, and new value. Filterable by date range, user, module, and action type.
 
 ---
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 neotorque/
@@ -137,7 +137,7 @@ neotorque/
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology |
 |-------|-----------|
@@ -151,7 +151,7 @@ neotorque/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
@@ -211,7 +211,7 @@ On first startup, create an admin user via the signup API with `is_system_admin:
 
 ---
 
-## 📦 Domain Data — NEOTORQUE Motors
+## Domain Data — NEOTORQUE Motors
 
 The system ships with a realistic DriveForge-inspired product catalog:
 
@@ -241,7 +241,7 @@ Parts Inspection → Chassis Fabrication → Engine Sub-Assembly → Transmissio
 
 ---
 
-## 🔑 Key Design Decisions
+## Key Design Decisions
 
 ### Why `on_hand_qty` only moves at terminal states
 Stock doesn't move during partial deliveries or partial receipts — only at Fully Delivered / Fully Received / Done. This is intentional: `on_hand_qty` and `reserved_qty` are designed to be read together. The reserved quantity is exactly what's covering the gap between what's on hand and what's been committed.
@@ -292,9 +292,9 @@ Full interactive docs at `/docs` when the backend is running.
 
 ---
 
-## 🏆 Hackathon Context
+## Hackathon Context
 
-Built for the **Odoo Hackathon** in 24 hours by the NEOTORQUE team. The challenge: build a functional, role-aware ERP from scratch in a single day, against a locked wireframe and schema reference. 
+Built for the **Odoo Hackathon** in 24 hours by the DevNova team. The challenge: build a functional, role-aware ERP from scratch in a single day, against a locked wireframe and schema reference. 
 
 What made it stand out:
 - **Recall Management** — no other team had this
@@ -306,9 +306,9 @@ What made it stand out:
 
 ---
 
-## 👥 Team
+## Team
 
-Built with ❤️ by the NEOTORQUE team during the Odoo Hackathon.
+Built with ❤️ by the DevNova team during the Odoo Hackathon.
 
 ---
 
