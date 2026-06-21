@@ -216,12 +216,12 @@ export default function AiInsights() {
             >
               <Background color="#334155" gap={24} />
               <Controls />
-              <MiniMap 
-                nodeStrokeColor={(n) => {
+              <MiniMap
+                nodeStrokeColor={(n: Node) => {
                   if (n.id === 'root') return '#06b6d4';
                   return '#475569';
                 }}
-                nodeColor={(n) => {
+                nodeColor={(n: Node) => {
                   if (n.id === 'root') return '#0ea5e9';
                   return '#1e293b';
                 }}

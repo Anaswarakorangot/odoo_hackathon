@@ -19,6 +19,8 @@ Built for the **Odoo Mini ERP Hackathon**.
 
 ---
 
+## What is NEOTORQUE?
+
 ## Table of Contents
 
 - [Overview](#overview)
@@ -41,6 +43,9 @@ Built for the **Odoo Mini ERP Hackathon**.
 ## Overview
 
 **NEOTORQUE** is a centralised Mini ERP that orchestrates the full *Demand → Delivery* lifecycle for a discrete-parts manufacturer. Every business action — confirming a sales order, receiving a vendor shipment, producing a finished good — moves stock through a strictly enforced state machine, writes an immutable ledger entry, and audits the change.
+## Feature Highlights
+
+### Core ERP Modules
 
 The system handles:
 
@@ -100,6 +105,35 @@ NEOTORQUE enforces this with three invariants:
 
 3. **Reservation is live-computed.** `free_to_use_qty = on_hand_qty − reserved_qty`, where
    `reserved_qty = Σ(ordered − delivered)` over active SO lines + `Σ(to_consume − consumed)` over active MO components. Confirming an SO immediately reserves; full delivery automatically releases.
+### Smart Automation
+
+- **Procurement Trigger** — When a Sales Order is confirmed and stock is short, NEOTORQUE automatically creates a Draft Purchase Order (for bought components) or a Draft Manufacturing Order (for manufactured sub-assemblies). No manual follow-up needed.
+- **Recursive MO Cascade** — If a sub-assembly's own components are short and procure-on-demand, NEOTORQUE creates child Manufacturing Orders linked to the parent, so nothing slips through.
+- **Row-locked Stock Service** — All stock movements go through a single `adjust_stock()` service with `SELECT ... FOR UPDATE`, preventing oversell race conditions when two orders confirm simultaneously.
+- **Terminal-only Stock Moves** — `on_hand_qty` only changes at fully terminal states (Fully Delivered, Fully Received, Done). Partial states never mutate stock — this is by design.
+
+### Recall Management
+Flag a defective component batch and instantly see every Manufacturing Order that consumed it, which finished vehicles they produced, and which customers received those vehicles. Nobody else at the hackathon had this.
+
+### Role-Based Access
+
+Five operational roles, each with a tailored UI:
+
+| Role | What they see | Sidebar |
+|------|--------------|---------|
+| **Sales Executive** | Customer orders, fleet management, finished vehicle catalog | Dashboard → Sales Orders → Products |
+| **Procurement Officer** | Vendor POs, raw component catalog | Dashboard → Purchase Orders → Products |
+| **Production Engineer** | MOs, BOMs, sub-assembly catalog | Dashboard → Manufacturing → BOM → Products |
+| **Inventory Controller** | Full product catalog, stock levels | Dashboard → Inventory → Products |
+| **Business Owner** | Full operational visibility, all modules | All 7 modules |
+| **System Admin** | User management, role permissions, audit logs | Admin panel only |
+
+### Audit Trail
+Every status transition and field change is logged server-side with module, record, action, field name, old value, and new value. Filterable by date range, user, module, and action type.
+
+---
+
+## Architecture
 
 ```
               ┌─────────────────────────────┐
@@ -230,7 +264,7 @@ odoo_hackathon/
 
 ---
 
-## Quick Start
+## Getting Started
 
 ### Prerequisites
 
@@ -360,6 +394,7 @@ If you'd rather watch it run as code, see [`backend/verify_flow.py`](./backend/v
 ---
 
 ## Role Matrix
+## Domain Data — NEOTORQUE Motors
 
 Seeded by `backend/app/db/seed_permissions.py`. Per-user overrides layer on top via the **PermissionGrid** in User Management.
 
@@ -529,7 +564,7 @@ GET    /api/ai/anomalies                      Anomaly detection (bonus)
 
 ---
 
-## Design Decisions
+## Key Design Decisions
 
 ### Why `on_hand_qty` only moves at terminal states
 Stock is mutated at `fully_received`, `fully_delivered`, `done` — never at partial states. This keeps the stock ledger interpretable: every ledger row corresponds to a real, completed event.
@@ -556,6 +591,8 @@ The hackathon DB is allowed to evolve without migration history. `auto_migrate.r
 Defining the project palette in `src/index.css` under `@theme` lets every existing `slate-*` utility class instantly render the project's custom graphite tones, with no per-component churn. Accent colors (cyan/amber/emerald/rose) remain untouched as "instrument lights" against the neutral background.
 
 ---
+
+## API Overview
 
 ## Verification
 
@@ -635,6 +672,23 @@ This implementation covers **100% of the Odoo Mini ERP spec**:
 - AI insights page (forecast + anomalies + BoM graph)
 - Concurrency-safe stock service with `SELECT FOR UPDATE` + passing tests
 - Idempotent ORM↔DB schema reconciler at startup
+## Hackathon Context
+
+Built for the **Odoo Hackathon** in 24 hours by the DevNova team. The challenge: build a functional, role-aware ERP from scratch in a single day, against a locked wireframe and schema reference. 
+
+What made it stand out:
+- **Recall Management** — no other team had this
+- **Recursive procurement cascade** — sub-assembly shortages trigger child MOs automatically  
+- **Role-specific UI everywhere** — signup, sidebar, product forms, and dashboards are all contextually different per role
+- **Concurrency-safe stock** — row-locked mutations, terminal-only stock moves
+- **VIN Number generation** — auto-generated `DFM-2026-XXXXX` identifiers linked to MOs
+- **Paint color variants** — CityDrive X1 available in Pearl White, Midnight Black, Fiesta Red
+
+---
+
+## Team
+
+Built with ❤️ by the DevNova team during the Odoo Hackathon.
 
 ---
 
