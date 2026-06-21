@@ -260,7 +260,7 @@ The wireframe says `"Available" only if free_to_use_qty EXACTLY EQUALS to_consum
 
 ---
 
-## 📡 API Overview
+## API Overview
 
 ```
 POST   /api/auth/signup              Register (role-based)
