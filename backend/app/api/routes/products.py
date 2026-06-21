@@ -9,6 +9,7 @@ from app.api.dependencies import (
     current_user_dependency,
     db_dependency,
     require_permission,
+    require_product_view_or_sales,
 )
 from app.models.bom import BOM
 from app.models.manufacturing import ManufacturingOrder, MOStatusEnum, MoComponent
@@ -242,7 +243,7 @@ def create_product(
 @router.get("", response_model=List[Product])
 def list_products(
     db: db_dependency,
-    _: Annotated[User, Depends(require_permission("Product", "view"))],
+    _: Annotated[User, Depends(require_product_view_or_sales)],
     type: str | None = None,  # e.g. ?type=finished_good
 ):
     q = db.query(ProductModel)
@@ -261,7 +262,7 @@ def list_products(
 def get_product(
     product_id: UUID,
     db: db_dependency,
-    _: Annotated[User, Depends(require_permission("Product", "view"))],
+    _: Annotated[User, Depends(require_product_view_or_sales)],
 ):
     product = db.query(ProductModel).filter(ProductModel.id == product_id).first()
     if not product:
@@ -273,7 +274,7 @@ def get_product(
 def get_stock(
     product_id: UUID,
     db: db_dependency,
-    _: Annotated[User, Depends(require_permission("Product", "view"))],
+    _: Annotated[User, Depends(require_product_view_or_sales)],
 ):
     if not db.query(ProductModel.id).filter(ProductModel.id == product_id).first():
         raise HTTPException(status_code=404, detail="Product not found")

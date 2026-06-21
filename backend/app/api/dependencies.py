@@ -155,3 +155,11 @@ def require_system_admin(current_user: current_user_dependency) -> User:
 
 
 system_admin_dependency = Annotated[User, Depends(require_system_admin)]
+
+def require_product_view_or_sales(
+    current_user: current_user_dependency,
+    db: db_dependency
+) -> User:
+    if allow_product_price_read(current_user, db):
+        return current_user
+    return require_permission("Product", "view")(current_user, db)
