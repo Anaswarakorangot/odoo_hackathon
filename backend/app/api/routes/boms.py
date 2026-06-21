@@ -58,12 +58,12 @@ def _build_bom_response(bom: BOM) -> BomResponse:
         finished_product=ProductBrief(
             id=bom.finished_product.id,
             name=bom.finished_product.name,
-        ),
+        ) if bom.finished_product else None,
         bom_lines=[
             BomLineResponse(
                 id=line.id,
                 component_product_id=line.component_product_id,
-                component_product_name=line.component_product.name,
+                component_product_name=line.component_product.name if line.component_product else "(deleted)",
                 qty_per_unit=line.qty_per_unit,
             )
             for line in bom.bom_lines

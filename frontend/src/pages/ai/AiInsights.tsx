@@ -1,28 +1,111 @@
 import { useEffect, useState } from 'react';
 import { aiApi } from '../../api/ai';
+import { bomsApi } from '../../api/manufacturing';
+import { ReactFlow, Controls, Background, MiniMap } from '@xyflow/react';
+import type { Node, Edge } from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
+import type { Bom } from '../../types/manufacturing';
 
 export default function AiInsights() {
   const [forecasts, setForecasts] = useState<any[]>([]);
   const [anomalies, setAnomalies] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const [nodes, setNodes] = useState<Node[]>([]);
+  const [edges, setEdges] = useState<Edge[]>([]);
+  const [selectedBomName, setSelectedBomName] = useState<string>('Loading...');
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   useEffect(() => {
     async function load() {
       try {
-        const [forecastData, anomalyData] = await Promise.all([
+        const [forecastData, anomalyData, bomsList] = await Promise.all([
           aiApi.getDemandForecast(),
-          aiApi.getAnomalies()
+          aiApi.getAnomalies(),
+          bomsApi.listBrief()
         ]);
         setForecasts(forecastData.forecasts || []);
         setAnomalies(anomalyData.anomalies || []);
-      } catch (err) {
+        
+        if (bomsList && bomsList.length > 0) {
+          const fullBom = await bomsApi.get(bomsList[0].id);
+          buildBomGraph(fullBom);
+        } else {
+          setSelectedBomName('No BoMs Found');
+        }
+      } catch (err: any) {
         console.error('Failed to load AI insights', err);
+        setErrorMsg(err.message || 'Unknown error occurred');
+        setSelectedBomName('Error Loading Data');
       } finally {
         setLoading(false);
       }
     }
     load();
   }, []);
+
+  const buildBomGraph = (bom: Bom) => {
+    const productName = bom?.finished_product?.name || 'Unknown Product';
+    setSelectedBomName(productName);
+    const newNodes: Node[] = [];
+    const newEdges: Edge[] = [];
+
+    // Root node (Finished Product)
+    newNodes.push({
+      id: 'root',
+      position: { x: 350, y: 50 },
+      data: { label: productName },
+      style: {
+        background: 'linear-gradient(to bottom right, #0891b2, #2563eb)',
+        color: 'white',
+        border: '1px solid #22d3ee',
+        borderRadius: '12px',
+        padding: '12px 24px',
+        fontWeight: 'bold',
+        boxShadow: '0 10px 15px -3px rgba(8, 145, 178, 0.5)',
+        width: 200,
+        textAlign: 'center',
+      }
+    });
+
+    // Component nodes
+    const lines = bom?.bom_lines || [];
+    const totalLines = lines.length;
+    const nodeWidth = 200;
+    const spacing = 40;
+    const totalWidth = (totalLines * nodeWidth) + ((totalLines - 1) * spacing);
+    const startX = 350 - (totalWidth / 2) + (nodeWidth / 2);
+
+    lines.forEach((line, index) => {
+      const nodeId = `comp-${line.id}`;
+      
+      newNodes.push({
+        id: nodeId,
+        position: { x: startX + (index * (nodeWidth + spacing)), y: 200 },
+        data: { label: `${line.component_product_name}\n(Qty: ${line.qty_per_unit})` },
+        style: {
+          background: '#1e293b',
+          color: '#e2e8f0',
+          border: '1px solid #06b6d4',
+          borderRadius: '8px',
+          padding: '10px 16px',
+          width: nodeWidth,
+          textAlign: 'center',
+        }
+      });
+
+      newEdges.push({
+        id: `edge-root-${nodeId}`,
+        source: 'root',
+        target: nodeId,
+        animated: true,
+        style: { stroke: '#06b6d4', strokeWidth: 2 }
+      });
+    });
+
+    setNodes(newNodes);
+    setEdges(newEdges);
+  };
 
   if (loading) {
     return (
@@ -35,7 +118,7 @@ export default function AiInsights() {
   return (
     <div className="max-w-6xl space-y-8">
       <div>
-        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">DriveForge AI Insights</h1>
+        <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-400 to-cyan-400">Neotorque AI Insights</h1>
         <p className="mt-2 text-slate-400">Intelligent forecasting, anomaly detection, and advanced visualizations.</p>
       </div>
 
@@ -108,87 +191,46 @@ export default function AiInsights() {
         </div>
       </div>
 
-      {/* Live BOM Explosion Animation */}
+      {/* Live BOM Explosion Visualizer - Now with React Flow! */}
       <div className="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl overflow-hidden">
-        <h2 className="text-xl font-bold text-white mb-6 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
-          Live BOM Explosion Visualizer
-        </h2>
-        <div className="h-80 w-full relative flex items-center justify-center bg-slate-950 rounded-xl border border-slate-800 overflow-hidden perspective-1000">
-          
-          <div className="absolute inset-0 opacity-20" style={{ backgroundImage: 'radial-gradient(circle at center, #06b6d4 1px, transparent 1px)', backgroundSize: '24px 24px' }}></div>
-          
-          {/* Animated SVG Connections */}
-          <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" style={{ strokeDasharray: '4 4' }}>
-            <line x1="50%" y1="20%" x2="30%" y2="60%" stroke="#06b6d4" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-50" />
-            <line x1="50%" y1="20%" x2="50%" y2="60%" stroke="#06b6d4" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-50" />
-            <line x1="50%" y1="20%" x2="70%" y2="60%" stroke="#06b6d4" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-50" />
-            
-            <line x1="30%" y1="60%" x2="20%" y2="85%" stroke="#8b5cf6" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-30" />
-            <line x1="30%" y1="60%" x2="40%" y2="85%" stroke="#8b5cf6" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-30" />
-            <line x1="70%" y1="60%" x2="60%" y2="85%" stroke="#8b5cf6" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-30" />
-            <line x1="70%" y1="60%" x2="80%" y2="85%" stroke="#8b5cf6" strokeWidth="2" className="animate-[dash_3s_linear_infinite] opacity-30" />
-          </svg>
-
-          <style>{`
-            @keyframes dash {
-              to { stroke-dashoffset: -20; }
-            }
-            .bom-node {
-              transition: all 0.3s ease;
-            }
-            .bom-node:hover {
-              transform: scale(1.1) translateY(-5px);
-              box-shadow: 0 10px 25px -5px rgba(6, 182, 212, 0.4);
-            }
-          `}</style>
-
-          {/* Root Node */}
-          <div className="absolute top-[15%] left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-6 py-3 bg-gradient-to-br from-cyan-600 to-blue-600 rounded-xl border border-cyan-400 text-white font-bold shadow-lg shadow-cyan-900/50">
-              Sedan Vehicle X
-            </div>
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-white flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-500 animate-pulse" />
+            Live BOM Explosion Visualizer
+          </h2>
+          <div className="text-sm text-cyan-400 bg-cyan-500/10 px-3 py-1 rounded-full border border-cyan-500/20">
+            Viewing: {selectedBomName}
           </div>
-
-          {/* Level 1 Nodes */}
-          <div className="absolute top-[60%] left-[30%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-4 py-2 bg-slate-800 rounded-lg border border-cyan-500/50 text-slate-200 text-sm font-medium">
-              Chassis Sub-Assembly
-            </div>
-          </div>
-          <div className="absolute top-[60%] left-[50%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-4 py-2 bg-slate-800 rounded-lg border border-cyan-500/50 text-slate-200 text-sm font-medium">
-              V8 Engine Block
-            </div>
-          </div>
-          <div className="absolute top-[60%] left-[70%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-4 py-2 bg-slate-800 rounded-lg border border-cyan-500/50 text-slate-200 text-sm font-medium">
-              Interior Cabin
-            </div>
-          </div>
-
-          {/* Level 2 Nodes */}
-          <div className="absolute top-[85%] left-[20%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-3 py-1 bg-slate-900 rounded border border-purple-500/30 text-slate-400 text-xs">
-              Steel Frame
-            </div>
-          </div>
-          <div className="absolute top-[85%] left-[40%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-3 py-1 bg-slate-900 rounded border border-purple-500/30 text-slate-400 text-xs">
-              Axle Set
-            </div>
-          </div>
-          <div className="absolute top-[85%] left-[60%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-3 py-1 bg-slate-900 rounded border border-purple-500/30 text-slate-400 text-xs">
-              Premium Seats
-            </div>
-          </div>
-          <div className="absolute top-[85%] left-[80%] -translate-x-1/2 -translate-y-1/2 z-10 bom-node">
-            <div className="px-3 py-1 bg-slate-900 rounded border border-purple-500/30 text-slate-400 text-xs">
-              Dashboard UI
-            </div>
-          </div>
-
+        </div>
+        
+        <div className="h-96 w-full relative flex items-center justify-center bg-slate-950 rounded-xl border border-slate-800 overflow-hidden">
+          {errorMsg ? (
+            <div className="text-rose-500 font-medium">Error: {errorMsg}</div>
+          ) : nodes.length > 0 ? (
+            <ReactFlow 
+              nodes={nodes} 
+              edges={edges}
+              fitView
+              attributionPosition="bottom-right"
+              className="react-flow-dark"
+            >
+              <Background color="#334155" gap={24} />
+              <Controls />
+              <MiniMap 
+                nodeStrokeColor={(n) => {
+                  if (n.id === 'root') return '#06b6d4';
+                  return '#475569';
+                }}
+                nodeColor={(n) => {
+                  if (n.id === 'root') return '#0ea5e9';
+                  return '#1e293b';
+                }}
+                maskColor="rgba(15, 23, 42, 0.7)"
+              />
+            </ReactFlow>
+          ) : (
+            <div className="text-slate-500">No BoM Data Available to Visualize</div>
+          )}
         </div>
       </div>
     </div>

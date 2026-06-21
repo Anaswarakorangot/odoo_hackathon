@@ -73,7 +73,7 @@ class ProductBrief(BaseModel):
 class BomResponse(BaseModel):
     id: UUID
     reference: str
-    finished_product: ProductBrief
+    finished_product: Optional[ProductBrief] = None
     bom_lines: List[BomLineResponse]
     bom_operations: List[BomOperationResponse]
     created_at: datetime
