@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { ToastProvider } from './contexts/ToastContext';
 import AppShell from './components/layout/AppShell';
+import LandingPage from './pages/LandingPage';
 import Login from './pages/auth/Login';
 import Signup from './pages/auth/Signup';
 import ForgetPassword from './pages/auth/ForgetPassword';
@@ -20,6 +21,7 @@ import AuditLogs from './pages/admin/AuditLogs';
 import UserManagement from './pages/admin/UserManagement';
 import RecallLookup from './pages/recall/RecallLookup';
 import Profile from './pages/auth/Profile';
+import Settings from './pages/auth/Settings';
 import AiInsights from './pages/ai/AiInsights';
 import InventoryList from './pages/inventory/InventoryList';
 
@@ -41,8 +43,8 @@ function App() {
       <AuthProvider>
         <ToastProvider>
           <Routes>
-            {/* Root goes to auth entry to avoid the old marketing landing surface */}
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            {/* Root goes to landing page */}
+            <Route path="/" element={<LandingPage />} />
 
             {/* Public auth routes */}
             <Route path="/login" element={<Login />} />
@@ -81,7 +83,7 @@ function App() {
 
               {/* Profile and settings */}
               <Route path="/profile" element={<Profile />} />
-              <Route path="/settings" element={<PlaceholderPage title="Settings" />} />
+              <Route path="/settings" element={<Settings />} />
             </Route>
 
             {/* Catch all */}

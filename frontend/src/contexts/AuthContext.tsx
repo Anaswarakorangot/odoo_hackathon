@@ -11,6 +11,7 @@ interface AuthContextType {
   login: (data: LoginRequest) => Promise<LoginResponse>;
   signup: (data: SignupRequest) => Promise<LoginResponse>;
   logout: () => void;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -102,6 +103,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     login,
     signup,
     logout,
+    updateUser: setUser,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -121,13 +123,31 @@ export function useAuthRedirect() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      // Route based on is_system_admin from JWT payload
-      if (isSystemAdmin) {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
+    async function handleRedirect() {
+      if (!isLoading && isAuthenticated) {
+        if (isSystemAdmin) {
+          navigate('/admin', { replace: true });
+        } else {
+          try {
+            const { settingsApi } = await import('../api/settings');
+            const settings = await settingsApi.get();
+            const moduleMap: Record<string, string> = {
+              'Dashboard': '/dashboard',
+              'Sales': '/sales',
+              'Purchase': '/purchase',
+              'Manufacturing': '/manufacturing',
+              'Inventory': '/inventory',
+              'Product': '/products',
+              'BoM': '/bom',
+            };
+            const path = settings.default_landing_module ? moduleMap[settings.default_landing_module] || '/dashboard' : '/dashboard';
+            navigate(path, { replace: true });
+          } catch {
+            navigate('/dashboard', { replace: true });
+          }
+        }
       }
     }
+    handleRedirect();
   }, [isAuthenticated, isSystemAdmin, isLoading, navigate]);
 }

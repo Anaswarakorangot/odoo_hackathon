@@ -4,13 +4,14 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import audit_logs, auth, boms, customers, manufacturing_orders, products, purchase_orders, recall, sales_orders, users, vendors, dashboard, ai
+from app.api.routes import audit_logs, auth, boms, customers, manufacturing_orders, products, purchase_orders, recall, sales_orders, users, vendors, dashboard, ai, user_settings
 from app.db.database import engine, Base, SessionLocal
-from app.db.seed_permissions import seed_role_permissions
 from app.db.auto_migrate import reconcile_sqlite_schema
+from app.db.seed_permissions import seed_role_permissions
 
 # Import all models so they are registered with Base.metadata
 import app.models  # noqa: F401
+import app.models.user_settings # noqa: F401
 
 
 @asynccontextmanager
@@ -85,7 +86,7 @@ app.include_router(audit_logs.router, prefix="/api")
 app.include_router(dashboard.router, prefix="/api")
 app.include_router(recall.router, prefix="/api")
 app.include_router(ai.router, prefix="/api")
-
+app.include_router(user_settings.router, prefix="/api")
 
 @app.get("/")
 def read_root():

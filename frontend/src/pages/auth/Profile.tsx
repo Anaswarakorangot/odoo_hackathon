@@ -4,7 +4,7 @@ import { usersApi } from '../../api/users';
 import type { User } from '../../types/auth';
 
 export default function Profile() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [panelData, setPanelData] = useState<Partial<User>>({});
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -34,15 +34,16 @@ export default function Profile() {
       setSuccessMsg('');
 
       // Update only allowed profile fields
-      await usersApi.update(user.id, {
+      const updatedUser = await usersApi.updateMe({
         name: panelData.name,
         address: panelData.address,
         mobile_number: panelData.mobile_number,
         email: panelData.email,
         photo_url: panelData.photo_url,
       });
+      updateUser(updatedUser);
 
-      setSuccessMsg('Profile successfully updated. Please refresh if some details did not update immediately.');
+      setSuccessMsg('Profile successfully updated.');
       setTimeout(() => setSuccessMsg(''), 4000);
     } catch (err: any) {
       const apiError = err.response?.data?.detail;
@@ -89,14 +90,34 @@ export default function Profile() {
               )}
             </div>
             <div className="flex-1 space-y-1.5">
-              <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Photo URL</label>
-              <input
-                type="text"
-                value={panelData.photo_url || ''}
-                onChange={(e) => handlePanelChange('photo_url', e.target.value)}
-                placeholder="https://..."
-                className="w-full bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
-              />
+              <label className="block text-xs font-medium text-slate-400 uppercase tracking-wider">Photo</label>
+              <div className="flex items-center gap-3">
+                <input
+                  type="text"
+                  value={panelData.photo_url || ''}
+                  onChange={(e) => handlePanelChange('photo_url', e.target.value)}
+                  placeholder="https://... or upload a file"
+                  className="flex-1 bg-slate-800/50 border border-slate-700 rounded-xl px-4 py-2.5 text-slate-200 focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500"
+                />
+                <label className="cursor-pointer px-4 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-slate-200 hover:bg-slate-700 hover:border-cyan-500 transition-colors">
+                  <span>Upload File</span>
+                  <input 
+                    type="file" 
+                    accept="image/*" 
+                    className="hidden" 
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onloadend = () => {
+                          handlePanelChange('photo_url', reader.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                </label>
+              </div>
             </div>
           </div>
 

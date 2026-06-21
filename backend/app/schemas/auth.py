@@ -23,8 +23,13 @@ class SignupRequest(BaseModel):
 class ResetPasswordRequest(BaseModel):
     """Reset password request - verify login_id and email, then update password"""
     login_id: str
-    email: EmailStr
+    email: str
     password: str
+
+class ChangePasswordRequest(BaseModel):
+    """Change password request for authenticated users"""
+    current_password: str
+    new_password: str
 
 
 class LoginRequest(BaseModel):

@@ -66,7 +66,8 @@ class User(Base):
         "ManufacturingOrder", foreign_keys="ManufacturingOrder.created_by", back_populates="created_by_user"
     )
     stock_ledger_entries = relationship("StockLedger", back_populates="created_by_user")
-    audit_logs = relationship("AuditLog", back_populates="user")
+    audit_logs = relationship("AuditLog", back_populates="user", cascade="all, delete-orphan")
+    settings = relationship("UserSettings", back_populates="user", uselist=False, cascade="all, delete-orphan")
 
     @validates("login_id")
     def validate_login_id(self, key, value):

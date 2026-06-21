@@ -12,8 +12,9 @@ from app.api.dependencies import (
 )
 from pydantic import BaseModel
 
-from app.core.security import get_password_hash, validate_password
+from app.core.security import get_password_hash, validate_password, verify_password
 from app.db.seed_permissions import ALL_MODULES, ALL_ACTIONS
+from app.schemas.auth import ChangePasswordRequest
 from app.models.permissions import RolePermission, UserPermissionOverride
 from app.models.user import User as UserModel
 from app.schemas.user import User, UserCreate, UserUpdate
@@ -127,6 +128,33 @@ def update_current_user(
     db.commit()
     db.refresh(current_user)
     return current_user
+
+
+@router.put("/me/password", status_code=status.HTTP_200_OK)
+def change_password(
+    request: ChangePasswordRequest,
+    current_user: current_user_dependency,
+    db: db_dependency,
+):
+    """Change current user's password"""
+    if not verify_password(request.current_password, current_user.password_hash):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=[{"field": "current_password", "message": "Incorrect current password"}]
+        )
+
+    # Validate new password complexity
+    password_valid, password_errors = validate_password(request.new_password)
+    if not password_valid:
+        errors = [{"field": "new_password", "message": err} for err in password_errors]
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=errors
+        )
+
+    current_user.password_hash = get_password_hash(request.new_password)
+    db.commit()
+    return {"message": "Password changed successfully"}
 
 
 @router.get("/{user_id}", response_model=User)
