@@ -99,10 +99,19 @@ class BomListResponse(BaseModel):
 # Manufacturing Order Schemas
 # ---------------------------------------------------------------------------
 
+class MoComponentCreate(BaseModel):
+    """Component data for manual creation."""
+    component_product_id: UUID
+    to_consume: Decimal = Field(gt=0)
+    consumed_qty: Decimal = Field(default=0, ge=0)
+    batch_number: Optional[str] = None
+
 class MoComponentUpdate(BaseModel):
-    """Update consumed quantity for a single MO component."""
-    component_id: UUID
-    consumed_qty: Decimal = Field(ge=0)
+    """Update consumed quantity for a single MO component, or create a new one."""
+    component_id: Optional[UUID] = None
+    component_product_id: Optional[UUID] = None
+    to_consume: Optional[Decimal] = None
+    consumed_qty: Optional[Decimal] = None
     batch_number: Optional[str] = None
 
 
@@ -120,6 +129,7 @@ class ManufacturingOrderCreateRequest(BaseModel):
     bom_id: Optional[UUID] = None
     assignee_id: Optional[UUID] = None
     scheduled_date: Optional[str] = None  # ISO date string
+    components: Optional[List[MoComponentCreate]] = None
 
 
 class ManufacturingOrderUpdateRequest(BaseModel):

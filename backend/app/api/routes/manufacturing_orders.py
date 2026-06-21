@@ -316,6 +316,15 @@ def create_manufacturing_order(
     # Auto-populate from BoM
     if bom:
         _populate_from_bom(db, mo, bom)
+    elif request.components:
+        for comp in request.components:
+            db.add(MoComponent(
+                mo_id=mo.id,
+                component_product_id=comp.component_product_id,
+                to_consume=comp.to_consume,
+                consumed_qty=comp.consumed_qty,
+                batch_number=comp.batch_number,
+            ))
 
     audit_service.log_change(
         db,
@@ -465,6 +474,18 @@ def update_manufacturing_order(
             bom = db.query(BOM).filter(BOM.id == mo.bom_id).first()
             if bom:
                 _populate_from_bom(db, mo, bom)
+        elif "components" in update_data and not mo.bom_id:
+            # Manual components replacement in draft
+            db.query(MoComponent).filter(MoComponent.mo_id == mo.id).delete()
+            for comp_update in update_data["components"]:
+                if "component_product_id" in comp_update and comp_update["component_product_id"]:
+                    db.add(MoComponent(
+                        mo_id=mo.id,
+                        component_product_id=comp_update["component_product_id"],
+                        to_consume=comp_update.get("to_consume", 1),
+                        consumed_qty=comp_update.get("consumed_qty", 0),
+                        batch_number=comp_update.get("batch_number"),
+                    ))
 
         audit_service.log_change(
             db, user_id=current_user.id, module="Manufacturing",
@@ -473,29 +494,32 @@ def update_manufacturing_order(
 
     # --- Component consumed_qty (confirmed or in_progress) ---
     if "components" in update_data and update_data["components"]:
-        if mo.status not in (MOStatusEnum.confirmed, MOStatusEnum.in_progress):
+        if mo.status == MOStatusEnum.draft:
+            pass # Handled above
+        elif mo.status not in (MOStatusEnum.confirmed, MOStatusEnum.in_progress):
             raise HTTPException(
                 status_code=409,
                 detail="Cannot update component quantities: MO is not confirmed or in_progress"
             )
-        comp_map = {comp.id: comp for comp in mo.components}
-        for comp_update in update_data["components"]:
-            comp = comp_map.get(comp_update["component_id"])
-            if not comp:
-                raise HTTPException(
-                    status_code=404,
-                    detail=f"Component {comp_update['component_id']} not found in this MO"
+        else:
+            comp_map = {comp.id: comp for comp in mo.components}
+            for comp_update in update_data["components"]:
+                comp = comp_map.get(comp_update["component_id"])
+                if not comp:
+                    raise HTTPException(
+                        status_code=404,
+                        detail=f"Component {comp_update['component_id']} not found in this MO"
+                    )
+                old_qty = comp.consumed_qty
+                comp.consumed_qty = comp_update["consumed_qty"]
+                if "batch_number" in comp_update:
+                    comp.batch_number = comp_update.get("batch_number")
+                audit_service.log_change(
+                    db, user_id=current_user.id, module="Manufacturing",
+                    record_type="MoComponent", record_id=comp.id, action="updated",
+                    field_changed="consumed_qty",
+                    old_value=str(old_qty), new_value=str(comp.consumed_qty),
                 )
-            old_qty = comp.consumed_qty
-            comp.consumed_qty = comp_update["consumed_qty"]
-            if "batch_number" in comp_update:
-                comp.batch_number = comp_update.get("batch_number")
-            audit_service.log_change(
-                db, user_id=current_user.id, module="Manufacturing",
-                record_type="MoComponent", record_id=comp.id, action="updated",
-                field_changed="consumed_qty",
-                old_value=str(old_qty), new_value=str(comp.consumed_qty),
-            )
 
     # --- Work order real_duration_min / pass_fail (confirmed or in_progress) ---
     if "work_orders" in update_data and update_data["work_orders"]:

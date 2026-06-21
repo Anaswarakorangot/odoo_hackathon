@@ -29,11 +29,13 @@ export interface AuditLogFilters {
 }
 
 export const AUDIT_MODULES = ['Sales', 'Purchase', 'Manufacturing', 'Product', 'BoM'];
-export const AUDIT_ACTIONS = ['created', 'updated', 'deleted', 'status_changed'];
+export const AUDIT_ACTIONS = ['created', 'updated', 'deleted', 'status_changed', 'vin_assigned', 'cascade_triggered'];
 
 export const ACTION_COLORS: Record<string, string> = {
   created: 'bg-emerald-500/20 text-emerald-300',
   updated: 'bg-cyan-500/20 text-cyan-300',
   deleted: 'bg-rose-500/20 text-rose-300',
   status_changed: 'bg-amber-500/20 text-amber-300',
+  vin_assigned: 'bg-violet-500/20 text-violet-300',
+  cascade_triggered: 'bg-blue-500/20 text-blue-300',
 };

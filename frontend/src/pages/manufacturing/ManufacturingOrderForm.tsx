@@ -9,7 +9,7 @@ import { MO_STATUS_COLORS, MO_STATUS_LABELS } from '../../types/manufacturing';
 type ProductLookup = { id: string; name: string; product_type: string };
 type BomLookup = { id: string; reference: string; finished_product_id: string; finished_product_name: string };
 type UserLookup = { id: string; name: string };
-type ComponentRow = { id: string; name: string; toConsume: number; consumedQty: number; batchNumber: string; freeToUseQty?: number };
+type ComponentRow = { id: string; name: string; productId?: string; toConsume: number; consumedQty: number; batchNumber: string; freeToUseQty?: number };
 type WorkOrderRow = { id: string; sequence: number; operationName: string; workCenter: string; expectedDuration: number; realDuration: number; passFail: string };
 
 export default function ManufacturingOrderForm() {
@@ -66,7 +66,7 @@ export default function ManufacturingOrderForm() {
       setQuantity(Number(data.quantity));
       setAssigneeId(data.assignee?.id || '');
       setScheduledDate(data.scheduled_date || '');
-      setComponents(data.components.map((component) => ({ id: component.id, name: component.component_product_name, toConsume: Number(component.to_consume), consumedQty: Number(component.consumed_qty), batchNumber: component.batch_number || '', freeToUseQty: component.free_to_use_qty !== null && component.free_to_use_qty !== undefined ? Number(component.free_to_use_qty) : undefined })));
+      setComponents(data.components.map((component) => ({ id: component.id, name: component.component_product_name, productId: component.component_product_id, toConsume: Number(component.to_consume), consumedQty: Number(component.consumed_qty), batchNumber: component.batch_number || '', freeToUseQty: component.free_to_use_qty !== null && component.free_to_use_qty !== undefined ? Number(component.free_to_use_qty) : undefined })));
       setWorkOrders(data.work_orders.map((workOrder) => ({ id: workOrder.id, sequence: workOrder.sequence, operationName: workOrder.operation_name, workCenter: workOrder.work_center, expectedDuration: workOrder.expected_duration_min, realDuration: workOrder.real_duration_min || 0, passFail: workOrder.pass_fail || '' })));
     } catch {
       setError('Failed to load manufacturing order');
@@ -90,10 +90,23 @@ export default function ManufacturingOrderForm() {
     setActionError('');
     try {
       if (isNew) {
-        const created = await manufacturingOrdersApi.create({ finished_product_id: finishedProductId, quantity, bom_id: bomId || undefined, assignee_id: assigneeId || undefined, scheduled_date: scheduledDate || undefined });
+        const payload: any = { finished_product_id: finishedProductId, quantity, bom_id: bomId || undefined, assignee_id: assigneeId || undefined, scheduled_date: scheduledDate || undefined };
+        if (!bomId && components.length > 0) {
+          payload.components = components.map(c => ({ component_product_id: c.productId!, to_consume: c.toConsume, consumed_qty: c.consumedQty, batch_number: c.batchNumber || undefined }));
+        }
+        const created = await manufacturingOrdersApi.create(payload);
         navigate(`/manufacturing/${created.id}`);
       } else if (order) {
-        const updated = await manufacturingOrdersApi.update(order.id, { finished_product_id: finishedProductId, bom_id: bomId || undefined, quantity, assignee_id: assigneeId || undefined, scheduled_date: scheduledDate || undefined, components: components.map((component) => ({ component_id: component.id, consumed_qty: component.consumedQty, batch_number: component.batchNumber || undefined })), work_orders: workOrders.map((workOrder) => ({ work_order_id: workOrder.id, real_duration_min: workOrder.realDuration, pass_fail: workOrder.passFail || undefined })) });
+        const payload: any = { finished_product_id: finishedProductId, bom_id: bomId || undefined, quantity, assignee_id: assigneeId || undefined, scheduled_date: scheduledDate || undefined };
+        payload.components = components.map((component) => ({
+          component_id: component.id.startsWith('manual-') ? undefined : component.id,
+          component_product_id: component.productId,
+          to_consume: component.toConsume,
+          consumed_qty: component.consumedQty,
+          batch_number: component.batchNumber || undefined
+        }));
+        payload.work_orders = workOrders.map((workOrder) => ({ work_order_id: workOrder.id, real_duration_min: workOrder.realDuration, pass_fail: workOrder.passFail || undefined }));
+        const updated = await manufacturingOrdersApi.update(order.id, payload);
         setOrder(updated);
         await loadOrder(updated.id);
       }
@@ -281,7 +294,7 @@ export default function ManufacturingOrderForm() {
         </div>
       </div>
 
-      {!isNew && (
+      {(!isNew || !bomId) && (
         <>
           <div className="rounded-xl border border-slate-800 bg-slate-900 p-6">
             <div className="mb-4 flex items-center justify-between">
@@ -306,12 +319,32 @@ export default function ManufacturingOrderForm() {
                     components.map((component, index) => {
                       const available = component.freeToUseQty;
                       const shortage = available !== undefined && Number(available) < Number(component.toConsume);
+                      const isManual = component.id.startsWith('manual-');
                       return (
                         <tr key={component.id} className="border-t border-slate-800/50">
-                          <td className="px-4 py-3 text-slate-200">{component.name}</td>
-                          <td className="px-4 py-3 text-right text-slate-400">{component.toConsume}</td>
+                          <td className="px-4 py-3 text-slate-200">
+                            {isDraft && !bomId ? (
+                              <select 
+                                value={component.productId || ''} 
+                                onChange={(e) => setComponents(current => current.map((row, rI) => rI === index ? { ...row, productId: e.target.value, name: products.find(p=>p.id===e.target.value)?.name || '' } : row))}
+                                className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200"
+                              >
+                                <option value="">Select component</option>
+                                {products.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                              </select>
+                            ) : (
+                              component.name
+                            )}
+                          </td>
                           <td className="px-4 py-3 text-right">
-                            <input type="number" min={0} step="any" value={component.consumedQty} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, consumedQty: Number(e.target.value) || 0 } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200" />
+                            {isDraft && !bomId ? (
+                               <input type="number" min={0} step="any" value={component.toConsume} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, toConsume: Number(e.target.value) || 0 } : row)))} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200" />
+                            ) : (
+                               <span className="text-slate-400">{component.toConsume}</span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <input type="number" min={0} step="any" value={component.consumedQty} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, consumedQty: Number(e.target.value) || 0 } : row)))} disabled={isDraft && !isManual} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-right text-slate-200 disabled:opacity-50" />
                           </td>
                           <td className="px-4 py-3">
                             <input type="text" value={component.batchNumber} onChange={(e) => setComponents((current) => current.map((row, rowIndex) => (rowIndex === index ? { ...row, batchNumber: e.target.value } : row)))} disabled={isTerminal} className="w-full rounded-lg border border-slate-700 bg-slate-800/50 px-3 py-2 text-slate-200 disabled:opacity-50" />
@@ -326,6 +359,15 @@ export default function ManufacturingOrderForm() {
                         </tr>
                       );
                     })
+                  )}
+                  {isDraft && !bomId && (
+                    <tr>
+                      <td colSpan={5} className="px-4 py-3 text-center border-t border-slate-800/50">
+                        <button onClick={() => setComponents([...components, { id: `manual-${crypto.randomUUID()}`, name: '', productId: '', toConsume: 1, consumedQty: 0, batchNumber: '' }])} className="text-sm font-medium text-emerald-400 hover:text-emerald-300">
+                          + Add component manually
+                        </button>
+                      </td>
+                    </tr>
                   )}
                 </tbody>
               </table>

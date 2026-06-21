@@ -126,17 +126,27 @@ export interface ManufacturingOrderListItem {
   created_at: string;
 }
 
+export interface MoComponentCreate {
+  component_product_id: string;
+  to_consume: number;
+  consumed_qty?: number;
+  batch_number?: string;
+}
+
 export interface ManufacturingOrderCreateRequest {
   finished_product_id: string;
   quantity: number;
   bom_id?: string;
   assignee_id?: string;
   scheduled_date?: string;
+  components?: MoComponentCreate[];
 }
 
 export interface MoComponentUpdate {
-  component_id: string;
-  consumed_qty: number;
+  component_id?: string;
+  component_product_id?: string;
+  to_consume?: number;
+  consumed_qty?: number;
   batch_number?: string;
 }
 
