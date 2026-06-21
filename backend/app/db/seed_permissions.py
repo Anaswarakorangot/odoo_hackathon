@@ -51,44 +51,32 @@ from app.models.permissions import RolePermission
 # | Product       | edit             | True  | True  |
 
 DEFAULT_PERMISSIONS = {
-    # Sales role: view/create/edit on Sales; create/edit on Product (add finished vehicles)
+    # Sales role
     RoleEnum.sales: {
         "Sales": ["view", "create", "edit"],
-        "Purchase": ["view"],
-        "Manufacturing": ["view"],
         "Product": ["view", "create", "edit"],
-        "BoM": ["view"],
         "Dashboard": ["view"],
     },
-    # Purchase role: view/create/edit on Purchase; create/edit on Product (add raw components)
+    # Purchase role
     RoleEnum.purchase: {
-        "Sales": ["view"],
         "Purchase": ["view", "create", "edit"],
-        "Manufacturing": ["view"],
         "Product": ["view", "create", "edit"],
-        "BoM": ["view"],
         "Dashboard": ["view"],
     },
-    # Manufacturing role: production_entry on Manufacturing; create/edit on Product (add sub-assemblies)
+    # Manufacturing role
     RoleEnum.manufacturing: {
-        "Sales": ["view"],
-        "Purchase": ["view"],
         "Manufacturing": ["view", "production_entry", "create", "edit"],
         "Product": ["view", "create", "edit"],
         "BoM": ["view"],
         "Dashboard": ["view"],
     },
-    # Inventory role: view all; create/edit on Product (manage stock items)
+    # Inventory role
     RoleEnum.inventory: {
-        "Sales": ["view"],
-        "Purchase": ["view"],
-        "Manufacturing": ["view"],
+        "Inventory": ["view"],
         "Product": ["view", "create", "edit"],
-        "BoM": ["view"],
         "Dashboard": ["view"],
     },
-    # Owner role: Business Owner / General Manager
-    # Full create/edit access across all modules — they oversee all operations
+    # Owner role
     RoleEnum.owner: {
         "Sales": ["view", "create", "edit"],
         "Purchase": ["view", "create", "edit"],
@@ -96,6 +84,8 @@ DEFAULT_PERMISSIONS = {
         "Product": ["view", "create", "edit"],
         "BoM": ["view", "create", "edit"],
         "Dashboard": ["view"],
+        "Inventory": ["view", "create", "edit"],
+        "AuditLog": ["view"]
     },
 }
 

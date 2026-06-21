@@ -32,6 +32,11 @@ export const usersApi = {
     return response.data;
   },
 
+  updateMe: async (data: Partial<User>): Promise<User> => {
+    const response = await apiClient.patch<User>('/users/me', data);
+    return response.data;
+  },
+
   getPermissions: async (id: string): Promise<UserPermissionsResponse> => {
     const response = await apiClient.get<UserPermissionsResponse>(`/users/${id}/permissions`);
     return response.data;
