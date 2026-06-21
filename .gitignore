@@ -41,3 +41,7 @@ Thumbs.db
 *.sln
 *.sw?
 .claude/
+
+# Playwright test artifacts
+frontend/playwright-report/
+frontend/test-results/

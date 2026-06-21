@@ -576,20 +576,20 @@ def confirm_manufacturing_order(
         old_value=old_status, new_value=mo.status.value,
     )
 
-    # Recursive MO cascade: auto-create child MOs for component shortages
-    child_mos = procurement_service.check_mo_component_shortages(
+    # Auto-create child MOs/POs for component shortages
+    child_orders = procurement_service.check_mo_component_shortages(
         db=db,
         mo=mo,
         current_user=current_user,
     )
-    if child_mos:
-        # Log for visibility (child MOs are already audit-logged individually)
-        refs = [child.reference for child in child_mos]
+    if child_orders:
+        # Log for visibility (child orders are already audit-logged individually)
+        refs = [order.reference for order in child_orders]
         audit_service.log_change(
             db, user_id=current_user.id, module="Manufacturing",
             record_type="ManufacturingOrder", record_id=mo.id,
             action="cascade_triggered",
-            field_changed="child_mos",
+            field_changed="child_orders",
             new_value=",".join(refs),
         )
 

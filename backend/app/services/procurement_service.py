@@ -268,19 +268,20 @@ def check_mo_component_shortages(
     mo: ManufacturingOrder,
     current_user: User,
     ancestry_product_ids: Optional[Set[UUID]] = None,
-) -> List[ManufacturingOrder]:
+) -> List[Union[ManufacturingOrder, PurchaseOrder]]:
     """
-    Check if any MO component has a shortage requiring recursive MO creation.
+    Check if any MO component has a shortage requiring auto-procurement.
 
     Called during MO confirm. For each component:
     1. Check if to_consume > product.on_hand_qty (shortage exists)
-    2. If product has procure_on_demand=True and procurement_type=manufacturing,
-       create a child MO with parent_mo_id set to the current MO
+    2. If product has procure_on_demand=True:
+       - procurement_type=manufacturing → create child MO with parent_mo_id
+       - procurement_type=purchase → create PO for the component
 
     Cycle detection: tracks product IDs through ancestry. If a product appears
     twice in the chain (A → B → A), stops to prevent infinite recursion.
 
-    Returns list of all child MOs created (direct + transitive).
+    Returns list of all child orders created (MOs and POs, direct + transitive).
     """
     if ancestry_product_ids is None:
         ancestry_product_ids = set()
@@ -288,7 +289,7 @@ def check_mo_component_shortages(
     # Add current MO's finished product to ancestry chain
     ancestry_product_ids = ancestry_product_ids | {mo.finished_product_id}
 
-    created_mos: List[ManufacturingOrder] = []
+    created_orders: List[Union[ManufacturingOrder, PurchaseOrder]] = []
 
     # Load components with their products
     components = (
@@ -310,18 +311,8 @@ def check_mo_component_shortages(
             logger.warning(f"Component product {comp.component_product_id} not found for MO {mo.id}")
             continue
 
-        # Skip if not procure_on_demand or not manufacturing type
+        # Skip if not procure_on_demand
         if not product.procure_on_demand:
-            continue
-        if product.procurement_type != ProcurementTypeEnum.manufacturing:
-            continue
-
-        # Cycle detection: if this product is already in ancestry, skip
-        if product.id in ancestry_product_ids:
-            logger.warning(
-                f"Cycle detected: product '{product.name}' ({product.id}) already in ancestry chain. "
-                f"Skipping child MO to prevent infinite recursion."
-            )
             continue
 
         # Calculate shortage
@@ -329,26 +320,46 @@ def check_mo_component_shortages(
         if shortage <= 0:
             continue
 
-        # Create child MO
-        child_mo = _create_child_manufacturing_order(
-            db=db,
-            product=product,
-            shortage=shortage,
-            parent_mo=mo,
-            current_user=current_user,
-        )
-        created_mos.append(child_mo)
+        if product.procurement_type == ProcurementTypeEnum.manufacturing:
+            # Cycle detection: if this product is already in ancestry, skip
+            if product.id in ancestry_product_ids:
+                logger.warning(
+                    f"Cycle detected: product '{product.name}' ({product.id}) already in ancestry chain. "
+                    f"Skipping child MO to prevent infinite recursion."
+                )
+                continue
 
-        # Recursively check the child MO's components
-        grandchildren = check_mo_component_shortages(
-            db=db,
-            mo=child_mo,
-            current_user=current_user,
-            ancestry_product_ids=ancestry_product_ids,
-        )
-        created_mos.extend(grandchildren)
+            # Create child MO
+            child_mo = _create_child_manufacturing_order(
+                db=db,
+                product=product,
+                shortage=shortage,
+                parent_mo=mo,
+                current_user=current_user,
+            )
+            created_orders.append(child_mo)
 
-    return created_mos
+            # Recursively check the child MO's components
+            grandchildren = check_mo_component_shortages(
+                db=db,
+                mo=child_mo,
+                current_user=current_user,
+                ancestry_product_ids=ancestry_product_ids,
+            )
+            created_orders.extend(grandchildren)
+
+        elif product.procurement_type == ProcurementTypeEnum.purchase:
+            # Create PO for purchase-type components
+            po = _create_component_purchase_order(
+                db=db,
+                product=product,
+                shortage=shortage,
+                parent_mo=mo,
+                current_user=current_user,
+            )
+            created_orders.append(po)
+
+    return created_orders
 
 
 def _create_child_manufacturing_order(
@@ -426,3 +437,74 @@ def _create_child_manufacturing_order(
     )
 
     return child_mo
+
+
+def _create_component_purchase_order(
+    db: Session,
+    product: Product,
+    shortage: Decimal,
+    parent_mo: ManufacturingOrder,
+    current_user: User,
+) -> PurchaseOrder:
+    """
+    Create a Purchase Order for a component shortage during MO confirm.
+
+    - Draft status
+    - auto_created=True
+    - source_mo_id links back to the triggering MO
+    - One line for the product with ordered_qty=shortage
+    """
+    if not product.vendor_id:
+        raise ValueError(
+            f"Cannot create PO for component '{product.name}': no vendor assigned. "
+            f"Set product.vendor_id before enabling procure_on_demand with type=purchase."
+        )
+
+    # Get vendor for address snapshot
+    vendor = db.query(Vendor).filter(Vendor.id == product.vendor_id).first()
+    if not vendor:
+        raise ValueError(f"Vendor {product.vendor_id} not found for product '{product.name}'")
+
+    # Generate reference
+    reference = _get_next_po_reference(db)
+
+    # Create PO
+    po = PurchaseOrder(
+        reference=reference,
+        vendor_id=product.vendor_id,
+        vendor_address=vendor.address,
+        responsible_person_id=current_user.id,
+        status=POStatusEnum.draft,
+        auto_created=True,
+        source_sales_order_id=parent_mo.source_sales_order_id,  # Inherit from parent MO
+        created_by=current_user.id,
+    )
+    db.add(po)
+    db.flush()  # Get PO id
+
+    # Create single line
+    po_line = PurchaseOrderLine(
+        purchase_order_id=po.id,
+        product_id=product.id,
+        ordered_qty=shortage,
+        received_qty=Decimal("0"),
+        cost_price=product.cost_price,
+    )
+    db.add(po_line)
+
+    # Audit log
+    audit_service.log_change(
+        db,
+        user_id=current_user.id,
+        module="Purchase",
+        record_type="PurchaseOrder",
+        record_id=po.id,
+        action="created",
+    )
+
+    logger.info(
+        f"Auto-created PO {reference} for component '{product.name}' "
+        f"qty={shortage} from MO {parent_mo.reference}"
+    )
+
+    return po

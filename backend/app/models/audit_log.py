@@ -16,6 +16,8 @@ class AuditActionEnum(enum.Enum):
     updated = "updated"
     deleted = "deleted"
     status_changed = "status_changed"
+    vin_assigned = "vin_assigned"
+    cascade_triggered = "cascade_triggered"
 
 
 class AuditLog(Base):
