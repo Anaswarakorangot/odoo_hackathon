@@ -33,6 +33,21 @@ body,
   background-color: #0a0a0c;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Light Mode (Invert Filter Hack)
+   Inverts colors and preserves hue, giving an instant light theme without
+   refactoring tailwind classes.
+   ═══════════════════════════════════════════════════════════════════════════ */
+html.light-mode {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.light-mode img,
+html.light-mode video,
+html.light-mode [data-theme-ignore] {
+  filter: invert(1) hue-rotate(180deg);
+}
+
 /* Scrollbar tuned to graphite */
 ::-webkit-scrollbar {
   width: 8px;

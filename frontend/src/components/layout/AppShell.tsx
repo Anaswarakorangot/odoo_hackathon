@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { Outlet, Navigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { settingsApi } from '../../api/settings';
 import Sidebar from './Sidebar';
 import TopBar from './TopBar';
 
@@ -16,6 +18,18 @@ export default function AppShell() {
       </div>
     );
   }
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      settingsApi.get().then((settings) => {
+        if (settings.theme === 'light') {
+          document.documentElement.classList.add('light-mode');
+        } else {
+          document.documentElement.classList.remove('light-mode');
+        }
+      }).catch(console.error);
+    }
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace />;
